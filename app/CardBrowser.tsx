@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import cardsData from "./cards.json";
 import {
+  ATTRIBUTES,
+  CARD_RARITIES,
   CHARACTER_BY_ID,
   CHARACTERS,
   GROUP_BY_CHARACTER,
@@ -66,6 +68,13 @@ function CharacterAvatar({
   );
 }
 
+function WikiIcon({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={alt} className={className} loading="lazy" />
+  );
+}
+
 function StarRating({
   value,
   onChange,
@@ -103,6 +112,10 @@ type FilterPanelProps = {
   setSelectedGroups: (value: Set<string>) => void;
   selectedCharacters: Set<string>;
   setSelectedCharacters: (value: Set<string>) => void;
+  selectedAttributes: Set<string>;
+  setSelectedAttributes: (value: Set<string>) => void;
+  selectedCardRarities: Set<string>;
+  setSelectedCardRarities: (value: Set<string>) => void;
   selectedRatings: Set<number>;
   setSelectedRatings: (value: Set<number>) => void;
   resultCount: number;
@@ -120,6 +133,10 @@ function FilterPanel({
   setSelectedGroups,
   selectedCharacters,
   setSelectedCharacters,
+  selectedAttributes,
+  setSelectedAttributes,
+  selectedCardRarities,
+  setSelectedCardRarities,
   selectedRatings,
   setSelectedRatings,
   resultCount,
@@ -162,6 +179,7 @@ function FilterPanel({
                 onClick={() => setSelectedGroups(toggleInSet(selectedGroups, group.id))}
               >
                 <span className="filter-checkbox">{active ? "✓" : ""}</span>
+                <WikiIcon src={group.icon} alt="" className="group-filter-icon" />
                 <span className="group-filter-copy">
                   <strong>{group.name}</strong>
                   <small>{group.members.length} 名角色</small>
@@ -206,7 +224,55 @@ function FilterPanel({
 
       <section className="filter-section">
         <div className="filter-section-title">
-          <h3>我的星级</h3>
+          <h3>卡面花色 <small>ATTRIBUTES</small></h3>
+          <button type="button" onClick={() => setSelectedAttributes(new Set())}>全部</button>
+        </div>
+        <div className="attribute-filter-grid">
+          {ATTRIBUTES.map((attribute) => {
+            const active = selectedAttributes.has(attribute.id);
+            return (
+              <button
+                type="button"
+                key={attribute.id}
+                className={active ? "is-active" : ""}
+                style={{ "--attribute-color": attribute.color } as React.CSSProperties}
+                onClick={() => setSelectedAttributes(toggleInSet(selectedAttributes, attribute.id))}
+              >
+                <WikiIcon src={attribute.icon} alt="" />
+                <span>{attribute.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="filter-section">
+        <div className="filter-section-title">
+          <h3>游戏内星级</h3>
+          <button type="button" onClick={() => setSelectedCardRarities(new Set())}>全部</button>
+        </div>
+        <div className="card-rarity-filter-grid">
+          {CARD_RARITIES.map((rarity) => {
+            const active = selectedCardRarities.has(rarity.id);
+            return (
+              <button
+                type="button"
+                key={rarity.id}
+                className={active ? "is-active" : ""}
+                title={rarity.name}
+                onClick={() => setSelectedCardRarities(toggleInSet(selectedCardRarities, rarity.id))}
+              >
+                <WikiIcon src={rarity.icon} alt="" />
+                <span>{rarity.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="filter-section">
+        <div className="filter-section-title">
+          <h3>我的评分</h3>
           <button type="button" onClick={() => setSelectedRatings(new Set())}>全部</button>
         </div>
         <div className="rating-filter-grid">
@@ -282,6 +348,8 @@ export default function CardBrowser() {
   const [ratingMessage, setRatingMessage] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [selectedCharacters, setSelectedCharacters] = useState<Set<string>>(new Set());
+  const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set());
+  const [selectedCardRarities, setSelectedCardRarities] = useState<Set<string>>(new Set());
   const [selectedRatings, setSelectedRatings] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>("all");
   const [sortMode, setSortMode] = useState<SortMode>("catalog");
@@ -402,6 +470,8 @@ export default function CardBrowser() {
       const rating = ratings[card.id] ?? 0;
       if (selectedGroups.size && !selectedGroups.has(group.id)) return false;
       if (selectedCharacters.size && !selectedCharacters.has(card.character)) return false;
+      if (selectedAttributes.size && !selectedAttributes.has(card.attribute)) return false;
+      if (selectedCardRarities.size && !selectedCardRarities.has(card.rarity)) return false;
       if (selectedRatings.size && !selectedRatings.has(rating)) return false;
       if (viewMode === "trained" && !card.trained) return false;
       if (viewMode === "normal" && card.trained) return false;
@@ -420,12 +490,12 @@ export default function CardBrowser() {
       filtered.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
     }
     return filtered;
-  }, [query, ratings, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
+  }, [query, ratings, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setVisibleCount(PAGE_SIZE));
     return () => window.cancelAnimationFrame(frame);
-  }, [query, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
+  }, [query, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
 
   const selectedIndex = selectedCardId ? filteredCards.findIndex((card) => card.id === selectedCardId) : -1;
   const selectedCard = selectedIndex >= 0 ? filteredCards[selectedIndex] : null;
@@ -450,12 +520,14 @@ export default function CardBrowser() {
   const clearFilters = () => {
     setSelectedGroups(new Set());
     setSelectedCharacters(new Set());
+    setSelectedAttributes(new Set());
+    setSelectedCardRarities(new Set());
     setSelectedRatings(new Set());
     setViewMode("all");
     setQuery("");
   };
 
-  const activeFilterCount = selectedGroups.size + selectedCharacters.size + selectedRatings.size + (viewMode === "all" ? 0 : 1);
+  const activeFilterCount = selectedGroups.size + selectedCharacters.size + selectedAttributes.size + selectedCardRarities.size + selectedRatings.size + (viewMode === "all" ? 0 : 1);
   const ratedValues = Object.values(ratings);
   const averageRating = ratedValues.length
     ? (ratedValues.reduce((sum, rating) => sum + rating, 0) / ratedValues.length).toFixed(1)
@@ -498,6 +570,10 @@ export default function CardBrowser() {
             setSelectedGroups={setSelectedGroups}
             selectedCharacters={selectedCharacters}
             setSelectedCharacters={setSelectedCharacters}
+            selectedAttributes={selectedAttributes}
+            setSelectedAttributes={setSelectedAttributes}
+            selectedCardRarities={selectedCardRarities}
+            setSelectedCardRarities={setSelectedCardRarities}
             selectedRatings={selectedRatings}
             setSelectedRatings={setSelectedRatings}
             resultCount={filteredCards.length}
@@ -534,7 +610,7 @@ export default function CardBrowser() {
               <span>排序</span>
               <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
                 <option value="catalog">目录顺序</option>
-                <option value="rating">星级最高</option>
+                <option value="rating">我的评分最高</option>
                 <option value="title">卡名 A–Z</option>
               </select>
             </label>
@@ -574,7 +650,11 @@ export default function CardBrowser() {
                             if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback;
                           }}
                         />
-                        <span className="card-type-badge">{card.trained ? "特训后" : "特训前"}</span>
+                        <span className="card-type-badge">{CARD_RARITIES.find((item) => item.id === card.rarity)!.shortName}</span>
+                        <span className="card-wiki-badges">
+                          <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={card.attribute} />
+                          <WikiIcon src={CARD_RARITIES.find((item) => item.id === card.rarity)!.icon} alt={card.rarity} />
+                        </span>
                         <span className="card-open-hint">查看原图 ↗</span>
                       </div>
                       <div className="card-meta">
@@ -609,7 +689,7 @@ export default function CardBrowser() {
 
       <footer>
         <span>SEKAI ARCHIVE</span>
-        <p>角色头像与团体信息参考萌娘百科；卡面读取自本机 pjsk_cards，评分同步至 data/ratings.json。</p>
+        <p>角色头像参考萌娘百科；卡面花色、稀有度与团体 Logo 参考 Project SEKAI Wiki；评分同步至 data/ratings.json。</p>
       </footer>
 
       {filtersOpen ? (
@@ -620,6 +700,10 @@ export default function CardBrowser() {
               setSelectedGroups={setSelectedGroups}
               selectedCharacters={selectedCharacters}
               setSelectedCharacters={setSelectedCharacters}
+              selectedAttributes={selectedAttributes}
+              setSelectedAttributes={setSelectedAttributes}
+              selectedCardRarities={selectedCardRarities}
+              setSelectedCardRarities={setSelectedCardRarities}
               selectedRatings={selectedRatings}
               setSelectedRatings={setSelectedRatings}
               resultCount={filteredCards.length}
@@ -652,7 +736,9 @@ export default function CardBrowser() {
             <div className="modal-title-block">
               <span style={{ color: GROUP_BY_CHARACTER[selectedCard.character].color }}>{GROUP_BY_CHARACTER[selectedCard.character].name}</span>
               <h2>{selectedCard.title}</h2>
-              <p>{CHARACTER_BY_ID[selectedCard.character].name} · {selectedCard.trained ? "特训后" : "特训前"} · {selectedIndex + 1} / {filteredCards.length}</p>
+              <p>
+                {CHARACTER_BY_ID[selectedCard.character].name} · {ATTRIBUTES.find((item) => item.id === selectedCard.attribute)!.name} · {CARD_RARITIES.find((item) => item.id === selectedCard.rarity)!.name} · {selectedIndex + 1} / {filteredCards.length}
+              </p>
             </div>
             <div className="modal-rating-block">
               <small>MY RATING</small>

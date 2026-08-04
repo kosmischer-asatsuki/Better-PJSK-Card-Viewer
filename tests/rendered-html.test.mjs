@@ -26,28 +26,41 @@ test("server-renders the finished PJSK card gallery", async () => {
   assert.match(html, /PJSK CARD VIEWER/);
   assert.match(html, /2354/);
   assert.match(html, /筛选卡面/);
+  assert.match(html, /卡面花色/);
+  assert.match(html, /游戏内星级/);
   assert.match(html, /评分文件/);
   assert.match(html, /\/pjsk_thumbs\//);
   assert.match(html, /\/character-icons\//);
+  assert.match(html, /\/filter-icons\/groups\/leo-need\.png/);
+  assert.match(html, /\/filter-icons\/attributes\/cool\.svg/);
   assert.match(html, /og\.png/);
   assert.doesNotMatch(html, /static\.wikia\.nocookie\.net/i);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("ships the complete manifest, Wiki icons, and portable rating file", async () => {
-  const [cardsSource, browserSource, pluginSource, ratingsSource, iconFiles] = await Promise.all([
+test("ships complete Wiki metadata, local icons, and portable ratings", async () => {
+  const [cardsSource, browserSource, pluginSource, ratingsSource, metadataSource, iconFiles, filterIconFiles] = await Promise.all([
     readFile(new URL("../app/cards.json", import.meta.url), "utf8"),
     readFile(new URL("../app/CardBrowser.tsx", import.meta.url), "utf8"),
     readFile(new URL("../build/local-card-assets-vite-plugin.ts", import.meta.url), "utf8"),
     readFile(new URL("../data/ratings.json", import.meta.url), "utf8"),
+    readFile(new URL("../data/card-metadata.json", import.meta.url), "utf8"),
     readdir(new URL("../public/character-icons/", import.meta.url)),
+    readdir(new URL("../public/filter-icons/", import.meta.url), { recursive: true }),
   ]);
   const cards = JSON.parse(cardsSource);
   const ratings = JSON.parse(ratingsSource);
+  const metadata = JSON.parse(metadataSource);
+  const attributes = new Set(["cool", "cute", "happy", "mysterious", "pure"]);
+  const rarities = new Set(["1", "2", "3", "4", "3-trained", "4-trained", "birthday"]);
   assert.equal(cards.length, 2354);
   assert.equal(new Set(cards.map((card) => card.character)).size, 26);
   assert.ok(cards.every((card) => !("imageUrl" in card)));
   assert.ok(cards.some((card) => card.trained));
+  assert.ok(cards.every((card) => attributes.has(card.attribute)));
+  assert.ok(cards.every((card) => rarities.has(card.rarity)));
+  assert.equal(new Set(cards.map((card) => card.attribute)).size, 5);
+  assert.equal(new Set(cards.map((card) => card.rarity)).size, 7);
   assert.match(browserSource, /pjsk-card-ratings-v1/);
   assert.match(browserSource, /localStorage\.getItem\(STORAGE_KEY\)/);
   assert.match(browserSource, /localStorage\.setItem\(STORAGE_KEY/);
@@ -56,7 +69,11 @@ test("ships the complete manifest, Wiki icons, and portable rating file", async 
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
   assert.equal(ratings.version, 1);
   assert.equal(typeof ratings.ratings, "object");
+  assert.equal(metadata.version, 1);
+  assert.equal(metadata.source, "https://projectsekai.fandom.com/wiki/Card_List");
+  assert.ok(Object.keys(metadata.cards).length >= cards.length);
   assert.equal(iconFiles.filter((file) => file.endsWith(".png")).length, 26);
+  assert.equal(filterIconFiles.filter((file) => /\.(png|svg)$/i.test(file)).length, 18);
   await access(new URL("../public/og.png", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
 });

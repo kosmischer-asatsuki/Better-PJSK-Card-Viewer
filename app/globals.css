@@ -344,6 +344,14 @@ button {
   letter-spacing: 0.05em;
 }
 
+.filter-section-title h3 small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
 .filter-section-title button {
   padding: 0;
   border: 0;
@@ -382,6 +390,13 @@ button {
 .group-filter-row.is-active {
   border-color: var(--group-color);
   background: var(--group-soft);
+}
+
+.group-filter-icon {
+  width: 58px;
+  height: 30px;
+  flex: 0 0 58px;
+  object-fit: contain;
 }
 
 .filter-checkbox {
@@ -499,6 +514,78 @@ button {
   height: 28px;
   flex: 0 0 28px;
   font-size: 8px;
+}
+
+.attribute-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.attribute-filter-grid button {
+  min-width: 0;
+  min-height: 57px;
+  padding: 7px 4px 6px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  border: 1px solid #e0e0dc;
+  background: #fafaf8;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 800;
+  transition: 150ms ease;
+}
+
+.attribute-filter-grid button img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+
+.attribute-filter-grid button:hover,
+.attribute-filter-grid button.is-active {
+  border-color: var(--attribute-color);
+  background: color-mix(in srgb, var(--attribute-color), white 90%);
+  color: var(--attribute-color);
+}
+
+.card-rarity-filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.card-rarity-filter-grid button {
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 7px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e0e0dc;
+  background: #fafaf8;
+  cursor: pointer;
+  color: #55555e;
+  text-align: left;
+  font-size: 9px;
+  line-height: 1.3;
+  transition: 150ms ease;
+}
+
+.card-rarity-filter-grid button img {
+  width: 28px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.card-rarity-filter-grid button:hover,
+.card-rarity-filter-grid button.is-active {
+  border-color: #8d78df;
+  background: #f2efff;
+  color: #6550bd;
 }
 
 .rating-filter-grid {
@@ -815,7 +902,7 @@ button {
   background: #dcdcd9;
 }
 
-.card-image-wrap img {
+.card-image-wrap > img {
   width: 100%;
   height: 100%;
   display: block;
@@ -823,7 +910,7 @@ button {
   transition: transform 350ms ease;
 }
 
-.card-tile:hover .card-image-wrap img {
+.card-tile:hover .card-image-wrap > img {
   transform: scale(1.035);
 }
 
@@ -842,6 +929,27 @@ button {
   padding: 5px 7px;
   background: rgba(24,24,31,0.8);
   backdrop-filter: blur(6px);
+}
+
+.card-wiki-badges {
+  position: absolute;
+  right: 9px;
+  top: 9px;
+  height: 31px;
+  padding: 3px 5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 3px 12px rgba(20,20,28,0.13);
+  backdrop-filter: blur(6px);
+}
+
+.card-wiki-badges img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
 }
 
 .card-open-hint {

@@ -20,17 +20,19 @@ Image.MAX_IMAGE_PIXELS = None
 print_lock = threading.Lock()
 
 
-def card_record(path: Path) -> dict[str, object]:
+def card_record(path: Path, metadata: dict[str, dict[str, str]]) -> dict[str, object]:
     stem = path.stem
     trained = stem.endswith("_T")
     clean_stem = stem[:-2] if trained else stem
-    return {
+    record: dict[str, object] = {
         "id": f"{path.parent.name}/{path.name}",
         "character": path.parent.name,
         "filename": path.name,
         "title": " ".join(clean_stem.replace("_", " ").split()),
         "trained": trained,
     }
+    record.update(metadata.get(str(record["id"]), {}))
+    return record
 
 
 def make_thumbnail(source: Path, cards_root: Path, thumbs_root: Path, width: int) -> str:
@@ -59,6 +61,7 @@ def main() -> int:
     parser.add_argument("--cards", type=Path, default=Path("pjsk_cards"))
     parser.add_argument("--thumbs", type=Path, default=Path("pjsk_thumbs"))
     parser.add_argument("--manifest", type=Path, default=Path("app/cards.json"))
+    parser.add_argument("--metadata", type=Path, default=Path("data/card-metadata.json"))
     parser.add_argument("--width", type=int, default=720)
     parser.add_argument("--workers", type=int, default=min(8, os.cpu_count() or 4))
     args = parser.parse_args()
@@ -69,7 +72,10 @@ def main() -> int:
     if not files:
         raise SystemExit(f"没有在 {cards_root} 下找到 PNG 卡面")
 
-    records = [card_record(path) for path in files]
+    metadata: dict[str, dict[str, str]] = {}
+    if args.metadata.is_file():
+        metadata = json.loads(args.metadata.read_text(encoding="utf-8")).get("cards", {})
+    records = [card_record(path, metadata) for path in files]
     args.manifest.parent.mkdir(parents=True, exist_ok=True)
     args.manifest.write_text(
         json.dumps(records, ensure_ascii=False, separators=(",", ":")),

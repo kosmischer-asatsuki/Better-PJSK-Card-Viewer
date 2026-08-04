@@ -4,8 +4,13 @@ export type CardRecord = {
   filename: string;
   title: string;
   trained: boolean;
+  attribute: CardAttributeId;
+  rarity: CardRarityId;
   imageUrl?: string;
 };
+
+export type CardAttributeId = "cool" | "cute" | "happy" | "mysterious" | "pure";
+export type CardRarityId = "1" | "2" | "3" | "4" | "3-trained" | "4-trained" | "birthday";
 
 export type Character = {
   id: string;
@@ -21,8 +26,27 @@ export type Group = {
   shortName: string;
   color: string;
   softColor: string;
+  icon: string;
   members: Character[];
 };
+
+export const ATTRIBUTES: { id: CardAttributeId; name: string; color: string; icon: string }[] = [
+  { id: "cool", name: "Cool", color: "#4aa9e9", icon: "/filter-icons/attributes/cool.svg" },
+  { id: "cute", name: "Cute", color: "#ef73a5", icon: "/filter-icons/attributes/cute.svg" },
+  { id: "happy", name: "Happy", color: "#ef9f34", icon: "/filter-icons/attributes/happy.svg" },
+  { id: "mysterious", name: "Mysterious", color: "#a56cc5", icon: "/filter-icons/attributes/mysterious.svg" },
+  { id: "pure", name: "Pure", color: "#63bd64", icon: "/filter-icons/attributes/pure.svg" },
+];
+
+export const CARD_RARITIES: { id: CardRarityId; name: string; shortName: string; icon: string }[] = [
+  { id: "1", name: "1 星", shortName: "1★", icon: "/filter-icons/rarities/1-star.png" },
+  { id: "2", name: "2 星", shortName: "2★", icon: "/filter-icons/rarities/2-star.png" },
+  { id: "3", name: "3 星", shortName: "3★", icon: "/filter-icons/rarities/3-star.png" },
+  { id: "4", name: "4 星", shortName: "4★", icon: "/filter-icons/rarities/4-star.png" },
+  { id: "3-trained", name: "3 星彩（特训后）", shortName: "3★ 特训后", icon: "/filter-icons/rarities/3-star-trained.png" },
+  { id: "4-trained", name: "4 星彩（特训后）", shortName: "4★ 特训后", icon: "/filter-icons/rarities/4-star-trained.png" },
+  { id: "birthday", name: "生日卡", shortName: "生日卡", icon: "/filter-icons/rarities/birthday.png" },
+];
 
 export const GROUPS: Group[] = [
   {
@@ -31,6 +55,7 @@ export const GROUPS: Group[] = [
     shortName: "VIRTUAL SINGER",
     color: "#00b9ad",
     softColor: "#d9f7f4",
+    icon: "/filter-icons/groups/virtual-singer.png",
     members: [
       { id: "HatsuneMiku", name: "初音未来", romanized: "Hatsune Miku", mark: "MI", color: "#33ccbb" },
       { id: "KagamineRin", name: "镜音铃", romanized: "Kagamine Rin", mark: "R", color: "#ffcc11" },
@@ -46,6 +71,7 @@ export const GROUPS: Group[] = [
     shortName: "LEO/NEED",
     color: "#4455dd",
     softColor: "#e4e7ff",
+    icon: "/filter-icons/groups/leo-need.png",
     members: [
       { id: "HoshinoIchika", name: "星乃一歌", romanized: "Hoshino Ichika", mark: "一", color: "#33aaee" },
       { id: "TenmaSaki", name: "天马咲希", romanized: "Tenma Saki", mark: "咲", color: "#ffdd44" },
@@ -59,6 +85,7 @@ export const GROUPS: Group[] = [
     shortName: "MORE MORE JUMP!",
     color: "#67b934",
     softColor: "#e7f7d8",
+    icon: "/filter-icons/groups/more-more-jump.png",
     members: [
       { id: "HanasatoMinori", name: "花里实乃理", romanized: "Hanasato Minori", mark: "实", color: "#ffccaa" },
       { id: "KiritaniHaruka", name: "桐谷遥", romanized: "Kiritani Haruka", mark: "遥", color: "#99ccff" },
@@ -72,6 +99,7 @@ export const GROUPS: Group[] = [
     shortName: "VIVID BAD SQUAD",
     color: "#f15464",
     softColor: "#ffe4e8",
+    icon: "/filter-icons/groups/vivid-bad-squad.png",
     members: [
       { id: "AzusawaKohane", name: "小豆泽心羽", romanized: "Azusawa Kohane", mark: "心", color: "#ff6699" },
       { id: "ShiraishiAn", name: "白石杏", romanized: "Shiraishi An", mark: "杏", color: "#00bbdd" },
@@ -85,6 +113,7 @@ export const GROUPS: Group[] = [
     shortName: "WONDERLANDS×SHOWTIME",
     color: "#ed7f24",
     softColor: "#fff0dd",
+    icon: "/filter-icons/groups/wonderlands-showtime.png",
     members: [
       { id: "TenmaTsukasa", name: "天马司", romanized: "Tenma Tsukasa", mark: "司", color: "#ffbb00" },
       { id: "OtoriEmu", name: "凤笑梦", romanized: "Otori Emu", mark: "笑", color: "#ff66bb" },
@@ -98,6 +127,7 @@ export const GROUPS: Group[] = [
     shortName: "25-JI, NIGHTCORD DE.",
     color: "#79649d",
     softColor: "#eee8f7",
+    icon: "/filter-icons/groups/nightcord.png",
     members: [
       { id: "YoisakiKanade", name: "宵崎奏", romanized: "Yoisaki Kanade", mark: "奏", color: "#bb6688" },
       { id: "AsahinaMafuyu", name: "朝比奈真冬", romanized: "Asahina Mafuyu", mark: "冬", color: "#8888cc" },
