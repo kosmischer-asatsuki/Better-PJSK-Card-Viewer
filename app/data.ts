@@ -4,7 +4,7 @@ export type CardRecord = {
   filename: string;
   title: string;
   trained: boolean;
-  imageUrl: string;
+  imageUrl?: string;
 };
 
 export type Character = {

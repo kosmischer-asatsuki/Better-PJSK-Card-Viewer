@@ -6,9 +6,11 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "vinext dev",
+    "dev": "vinext dev --hostname 127.0.0.1",
+    "local": "vinext dev --hostname 127.0.0.1",
     "build": "vinext build",
-    "start": "vinext start",
+    "start": "vinext dev --hostname 127.0.0.1",
+    "prepare:local": "python scripts/prepare_local_assets.py",
     "test": "pnpm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

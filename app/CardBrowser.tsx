@@ -18,12 +18,12 @@ type Ratings = Record<string, number>;
 type ViewMode = "all" | "normal" | "trained";
 type SortMode = "catalog" | "rating" | "title";
 
-function thumbnailUrl(url: string) {
-  const [base, query] = url.split("?", 2);
-  const resized = base.includes("/revision/latest")
-    ? base.replace("/revision/latest", "/revision/latest/scale-to-width-down/720")
-    : base;
-  return query ? `${resized}?${query}` : resized;
+function assetUrl(card: CardRecord, thumbnail = false) {
+  const [character, ...filenameParts] = card.id.split("/");
+  const filename = filenameParts.join("/");
+  const localFilename = thumbnail ? filename.replace(/\.png$/i, ".webp") : filename;
+  const directory = thumbnail ? "pjsk_thumbs" : "pjsk_cards";
+  return `/${directory}/${encodeURIComponent(character)}/${encodeURIComponent(localFilename)}`;
 }
 
 function toggleInSet<T>(current: Set<T>, value: T) {
@@ -187,7 +187,7 @@ function FilterPanel({
         </div>
       </section>
 
-      <p className="filter-logic-note">同类选项取并集，不同条件取交集。</p>
+      <p className="filter-logic-note">同类选项取并集，不同条件取交集。评分仅保存在本机浏览器。</p>
       <div className="filter-panel-actions">
         <button type="button" className="button button-secondary" onClick={clearFilters}>重置</button>
         {onDone ? (
@@ -402,7 +402,15 @@ export default function CardBrowser() {
                     >
                       <div className="card-image-wrap">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={thumbnailUrl(card.imageUrl)} alt={`${character.name}「${card.title}」卡面`} loading="lazy" referrerPolicy="no-referrer" />
+                        <img
+                          src={assetUrl(card, true)}
+                          alt={`${character.name}「${card.title}」卡面`}
+                          loading="lazy"
+                          onError={(event) => {
+                            const fallback = assetUrl(card);
+                            if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback;
+                          }}
+                        />
                         <span className="card-type-badge">{card.trained ? "特训后" : "特训前"}</span>
                         <span className="card-open-hint">查看原图 ↗</span>
                       </div>
@@ -438,7 +446,7 @@ export default function CardBrowser() {
 
       <footer>
         <span>SEKAI ARCHIVE</span>
-        <p>角色与团体信息参考萌娘百科；卡面图像来自 Project SEKAI Wiki。</p>
+        <p>角色与团体信息参考萌娘百科；卡面图像读取自本机 pjsk_cards 目录。</p>
       </footer>
 
       {filtersOpen ? (
@@ -466,9 +474,8 @@ export default function CardBrowser() {
           <div className="modal-image-stage" onClick={() => setSelectedCardId(null)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={selectedCard.imageUrl}
+              src={assetUrl(selectedCard)}
               alt={`${CHARACTER_BY_ID[selectedCard.character].name}「${selectedCard.title}」原图`}
-              referrerPolicy="no-referrer"
               onClick={(event) => event.stopPropagation()}
             />
           </div>
@@ -483,7 +490,7 @@ export default function CardBrowser() {
               <small>MY RATING</small>
               <StarRating dark value={ratings[selectedCard.id] ?? 0} onChange={(next) => setRating(selectedCard.id, next)} />
             </div>
-            <a href={selectedCard.imageUrl} target="_blank" rel="noreferrer" className="original-link">新窗口打开原图 ↗</a>
+            <a href={assetUrl(selectedCard)} target="_blank" rel="noreferrer" className="original-link">新窗口打开原图 ↗</a>
           </div>
         </div>
       ) : null}

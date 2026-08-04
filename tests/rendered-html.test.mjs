@@ -26,16 +26,25 @@ test("server-renders the finished PJSK card gallery", async () => {
   assert.match(html, /PJSK CARD VIEWER/);
   assert.match(html, /2354/);
   assert.match(html, /筛选卡面/);
+  assert.match(html, /\/pjsk_thumbs\//);
   assert.match(html, /og\.png/);
+  assert.doesNotMatch(html, /static\.wikia\.nocookie\.net/i);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
 test("ships the complete manifest and social preview", async () => {
-  const cards = JSON.parse(await readFile(new URL("../app/cards.json", import.meta.url), "utf8"));
+  const [cardsSource, browserSource] = await Promise.all([
+    readFile(new URL("../app/cards.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/CardBrowser.tsx", import.meta.url), "utf8"),
+  ]);
+  const cards = JSON.parse(cardsSource);
   assert.equal(cards.length, 2354);
   assert.equal(new Set(cards.map((card) => card.character)).size, 26);
-  assert.ok(cards.every((card) => card.imageUrl.startsWith("https://")));
+  assert.ok(cards.every((card) => !("imageUrl" in card)));
   assert.ok(cards.some((card) => card.trained));
+  assert.match(browserSource, /pjsk-card-ratings-v1/);
+  assert.match(browserSource, /localStorage\.getItem\(STORAGE_KEY\)/);
+  assert.match(browserSource, /localStorage\.setItem\(STORAGE_KEY/);
   await access(new URL("../public/og.png", import.meta.url));
   await assert.rejects(access(new URL("../app/_sites-preview", import.meta.url)));
 });

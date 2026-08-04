@@ -41,5 +41,6 @@ next-env.d.ts
 /outputs/
 /work/
 /pjsk_cards/
+/pjsk_thumbs/
 /.pnpm-store/
 /__pycache__/
