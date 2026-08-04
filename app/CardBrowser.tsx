@@ -15,6 +15,7 @@ const STORAGE_KEY = "pjsk-card-ratings-v1";
 const PAGE_SIZE = 48;
 
 type Ratings = Record<string, number>;
+type RatingSyncStatus = "loading" | "saving" | "synced" | "local-only" | "error";
 type ViewMode = "all" | "normal" | "trained";
 type SortMode = "catalog" | "rating" | "title";
 
@@ -31,6 +32,38 @@ function toggleInSet<T>(current: Set<T>, value: T) {
   if (next.has(value)) next.delete(value);
   else next.add(value);
   return next;
+}
+
+function cleanRatings(input: unknown): Ratings {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  const clean: Ratings = {};
+  for (const [cardId, rating] of Object.entries(input)) {
+    if (Number.isInteger(rating) && Number(rating) >= 1 && Number(rating) <= 5) {
+      clean[cardId] = Number(rating);
+    }
+  }
+  return clean;
+}
+
+function CharacterAvatar({
+  character,
+  className,
+}: {
+  character: (typeof CHARACTERS)[number];
+  className: string;
+}) {
+  return (
+    <span className={className} style={{ "--character-color": character.color } as React.CSSProperties}>
+      {character.mark}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/character-icons/${character.id}.png`}
+        alt=""
+        loading="lazy"
+        onError={(event) => event.currentTarget.remove()}
+      />
+    </span>
+  );
 }
 
 function StarRating({
@@ -73,6 +106,11 @@ type FilterPanelProps = {
   selectedRatings: Set<number>;
   setSelectedRatings: (value: Set<number>) => void;
   resultCount: number;
+  ratingsCount: number;
+  ratingSyncStatus: RatingSyncStatus;
+  ratingMessage: string;
+  exportRatings: () => void;
+  importRatings: (file: File) => void;
   clearFilters: () => void;
   onDone?: () => void;
 };
@@ -85,6 +123,11 @@ function FilterPanel({
   selectedRatings,
   setSelectedRatings,
   resultCount,
+  ratingsCount,
+  ratingSyncStatus,
+  ratingMessage,
+  exportRatings,
+  importRatings,
   clearFilters,
   onDone,
 }: FilterPanelProps) {
@@ -150,7 +193,7 @@ function FilterPanel({
                       title={character.romanized}
                     >
                       <span className="filter-checkbox">{active ? "✓" : ""}</span>
-                      <span className="character-mark" style={{ "--character-color": character.color } as React.CSSProperties}>{character.mark}</span>
+                      <CharacterAvatar character={character} className="character-mark" />
                       <span>{character.name}</span>
                     </button>
                   );
@@ -187,7 +230,39 @@ function FilterPanel({
         </div>
       </section>
 
-      <p className="filter-logic-note">同类选项取并集，不同条件取交集。评分仅保存在本机浏览器。</p>
+      <section className="filter-section rating-file-section">
+        <div className="filter-section-title">
+          <h3>评分文件</h3>
+          <span className={`rating-file-status is-${ratingSyncStatus}`}>
+            {ratingSyncStatus === "loading" ? "正在读取…" : null}
+            {ratingSyncStatus === "saving" ? "正在保存…" : null}
+            {ratingSyncStatus === "synced" ? "已同步" : null}
+            {ratingSyncStatus === "local-only" ? "仅浏览器存储" : null}
+            {ratingSyncStatus === "error" ? "同步失败" : null}
+          </span>
+        </div>
+        <p className="rating-file-copy">
+          {ratingsCount} 条已评级记录，自动保存到 <code>data/ratings.json</code>。
+        </p>
+        <div className="rating-file-actions">
+          <button type="button" className="rating-file-button" onClick={exportRatings}>导出 JSON</button>
+          <label className="rating-file-button">
+            导入 JSON
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) importRatings(file);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+        {ratingMessage ? <p className="rating-file-message">{ratingMessage}</p> : null}
+      </section>
+
+      <p className="filter-logic-note">同类选项取并集，不同条件取交集。评分同时保存到浏览器与本地文件。</p>
       <div className="filter-panel-actions">
         <button type="button" className="button button-secondary" onClick={clearFilters}>重置</button>
         {onDone ? (
@@ -202,6 +277,9 @@ function FilterPanel({
 
 export default function CardBrowser() {
   const [ratings, setRatings] = useState<Ratings>({});
+  const [ratingsReady, setRatingsReady] = useState(false);
+  const [ratingSyncStatus, setRatingSyncStatus] = useState<RatingSyncStatus>("loading");
+  const [ratingMessage, setRatingMessage] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [selectedCharacters, setSelectedCharacters] = useState<Set<string>>(new Set());
   const [selectedRatings, setSelectedRatings] = useState<Set<number>>(new Set());
@@ -213,17 +291,66 @@ export default function CardBrowser() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setRatings(JSON.parse(saved));
-    } catch {
-      // A malformed local value should never make the gallery unusable.
-    }
+    let cancelled = false;
+
+    const loadRatings = async () => {
+      let localRatings: Ratings = {};
+      try {
+        const saved = window.localStorage.getItem(STORAGE_KEY);
+        if (saved) localRatings = cleanRatings(JSON.parse(saved));
+      } catch {
+        // A malformed local value should never make the gallery unusable.
+      }
+
+      try {
+        const response = await fetch("/api/local-ratings", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!cancelled) {
+          setRatings({ ...localRatings, ...cleanRatings(payload.ratings) });
+          setRatingSyncStatus("synced");
+        }
+      } catch {
+        if (!cancelled) {
+          setRatings(localRatings);
+          setRatingSyncStatus("local-only");
+        }
+      } finally {
+        if (!cancelled) setRatingsReady(true);
+      }
+    };
+
+    loadRatings();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
+    if (!ratingsReady) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings));
-  }, [ratings]);
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setRatingSyncStatus("saving");
+      try {
+        const response = await fetch("/api/local-ratings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ version: 1, ratings }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setRatingSyncStatus("synced");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setRatingSyncStatus("local-only");
+      }
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [ratings, ratingsReady]);
 
   useEffect(() => {
     document.body.classList.toggle("has-overlay", filtersOpen || Boolean(selectedCardId));
@@ -237,6 +364,34 @@ export default function CardBrowser() {
       else next[cardId] = rating;
       return next;
     });
+  }, []);
+
+  const exportRatings = useCallback(() => {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      ratings,
+    };
+    const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "pjsk-ratings.json";
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setRatingMessage(`已导出 ${Object.keys(ratings).length} 条评分`);
+  }, [ratings]);
+
+  const importRatings = useCallback(async (file: File) => {
+    try {
+      const payload = JSON.parse(await file.text());
+      const imported = cleanRatings(payload?.ratings ?? payload);
+      setRatings((current) => ({ ...current, ...imported }));
+      setRatingMessage(`已导入 ${Object.keys(imported).length} 条评分`);
+    } catch {
+      setRatingMessage("导入失败：请选择有效的评分 JSON 文件");
+      setRatingSyncStatus("error");
+    }
   }, []);
 
   const filteredCards = useMemo(() => {
@@ -267,7 +422,10 @@ export default function CardBrowser() {
     return filtered;
   }, [query, ratings, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
 
-  useEffect(() => setVisibleCount(PAGE_SIZE), [query, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setVisibleCount(PAGE_SIZE));
+    return () => window.cancelAnimationFrame(frame);
+  }, [query, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
 
   const selectedIndex = selectedCardId ? filteredCards.findIndex((card) => card.id === selectedCardId) : -1;
   const selectedCard = selectedIndex >= 0 ? filteredCards[selectedIndex] : null;
@@ -343,6 +501,11 @@ export default function CardBrowser() {
             selectedRatings={selectedRatings}
             setSelectedRatings={setSelectedRatings}
             resultCount={filteredCards.length}
+            ratingsCount={ratedValues.length}
+            ratingSyncStatus={ratingSyncStatus}
+            ratingMessage={ratingMessage}
+            exportRatings={exportRatings}
+            importRatings={importRatings}
             clearFilters={clearFilters}
           />
         </aside>
@@ -416,7 +579,7 @@ export default function CardBrowser() {
                       </div>
                       <div className="card-meta">
                         <div className="card-character-row">
-                          <span className="mini-character-mark" style={{ "--character-color": character.color } as React.CSSProperties}>{character.mark}</span>
+                          <CharacterAvatar character={character} className="mini-character-mark" />
                           <span><strong>{character.name}</strong><small style={{ color: group.color }}>{group.shortName}</small></span>
                         </div>
                         <h3 title={card.title}>{card.title}</h3>
@@ -446,7 +609,7 @@ export default function CardBrowser() {
 
       <footer>
         <span>SEKAI ARCHIVE</span>
-        <p>角色与团体信息参考萌娘百科；卡面图像读取自本机 pjsk_cards 目录。</p>
+        <p>角色头像与团体信息参考萌娘百科；卡面读取自本机 pjsk_cards，评分同步至 data/ratings.json。</p>
       </footer>
 
       {filtersOpen ? (
@@ -460,6 +623,11 @@ export default function CardBrowser() {
               selectedRatings={selectedRatings}
               setSelectedRatings={setSelectedRatings}
               resultCount={filteredCards.length}
+              ratingsCount={ratedValues.length}
+              ratingSyncStatus={ratingSyncStatus}
+              ratingMessage={ratingMessage}
+              exportRatings={exportRatings}
+              importRatings={importRatings}
               clearFilters={clearFilters}
               onDone={() => setFiltersOpen(false)}
             />

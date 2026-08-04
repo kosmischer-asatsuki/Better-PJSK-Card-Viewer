@@ -1,6 +1,6 @@
 # PJSK 卡面档案室（本地版）
 
-这是一个完全在本机运行的 Project SEKAI 卡面预览器。卡面读取自 `./pjsk_cards`，缩略图读取自 `./pjsk_thumbs`，不依赖线上图床。
+这是一个完全在本机运行的 Project SEKAI 卡面预览器。卡面读取自 `./pjsk_cards`，缩略图读取自 `./pjsk_thumbs`，26 个角色头像缓存于 `./public/character-icons`，运行时不依赖线上图床。
 
 ## 启动
 
@@ -37,22 +37,34 @@ refresh-cards.cmd
 python -m pip install pillow
 ```
 
-## 本地评分
+## 本地评分与跨机器同步
 
-评分保存在浏览器的 `localStorage` 中，键名为 `pjsk-card-ratings-v1`：
+已完成评级的星级会自动写入独立文件：
 
-- 不会上传到服务器或外网。
-- 关闭并重新启动项目后仍会保留。
-- 评分与浏览器、用户配置和访问地址绑定，请始终使用 `http://127.0.0.1:3000`。
-- 清除该站点的浏览器数据后，评分也会被删除。
+```text
+data/ratings.json
+```
+
+- 文件只保存 1～5 星的已评级卡面，不会上传到外网。
+- 浏览器的 `localStorage`（键名 `pjsk-card-ratings-v1`）同时作为缓存与故障降级。
+- 切换机器时，可以在项目关闭后直接复制 `data/ratings.json`；也可以在筛选栏使用“导出 JSON / 导入 JSON”。
+- 导入采用合并方式：导入文件中的同一卡面评分会覆盖当前评分，其他评分不会被删除。
+
+## 更新角色头像
+
+双击 `refresh-icons.cmd` 可重新从[萌娘百科 PJSK 角色表](https://mzh.moegirl.org.cn/世界计划_%E7%BC%A4%E7%BA%B7%E8%88%9E%E5%8F%B0%EF%BC%81_feat._%E5%88%9D%E9%9F%B3%E6%9C%AA%E6%9D%A5)抓取并缓存 26 个角色 icon。只有刷新头像时需要联网，日常浏览不需要。
 
 ## 项目结构
 
 ```text
 pjsk_cards/                 原始 PNG 卡面（不提交到 Git）
 pjsk_thumbs/                本地 WebP 缩略图（不提交到 Git）
+public/character-icons/     萌娘百科角色 icon 的本地缓存
+data/ratings.json           可复制、可同步的已评级星级文件
 app/cards.json              卡面清单
 scripts/prepare_local_assets.py
+scripts/fetch_character_icons.py
 start-local.cmd             本地启动入口
 refresh-cards.cmd           更新清单与缩略图
+refresh-icons.cmd           更新角色头像
 ```
