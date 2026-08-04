@@ -91,8 +91,9 @@ def parse_list_page(page: str) -> list[dict[str, object]]:
         cells = re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.DOTALL | re.IGNORECASE)
         if len(cells) < 5:
             continue
+        card_number = re.search(r"<b>\s*(\d+)\s*</b>", cells[1], flags=re.IGNORECASE)
         links = re.findall(r'<a\b[^>]*title="([^"]+)"[^>]*>', cells[2], flags=re.IGNORECASE)
-        if len(links) < 2:
+        if len(links) < 2 or not card_number:
             continue
         filenames: list[tuple[str, bool]] = []
         for trained, cell in ((False, cells[3]), (True, cells[4])):
@@ -101,7 +102,11 @@ def parse_list_page(page: str) -> list[dict[str, object]]:
                 filename = urllib.parse.unquote(html.unescape(image_names[-1])).replace(" ", "_")
                 filenames.append((filename, trained))
         if filenames:
-            records.append({"page": html.unescape(links[0]), "files": filenames})
+            records.append({
+                "page": html.unescape(links[0]),
+                "wikiNumber": int(card_number.group(1)),
+                "files": filenames,
+            })
     return records
 
 
@@ -143,7 +148,7 @@ def template_value(source: str, field: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
-def build_metadata(records: list[dict[str, object]]) -> dict[str, dict[str, str]]:
+def build_metadata(records: list[dict[str, object]]) -> dict[str, dict[str, object]]:
     titles = sorted({str(record["page"]) for record in records})
     sources: dict[str, str] = {}
     batches = [titles[index:index + 40] for index in range(0, len(titles), 40)]
@@ -153,7 +158,7 @@ def build_metadata(records: list[dict[str, object]]) -> dict[str, dict[str, str]
             sources.update(future.result())
             print(f"已读取 {len(sources)}/{len(titles)} 张卡片资料")
 
-    metadata: dict[str, dict[str, str]] = {}
+    metadata: dict[str, dict[str, object]] = {}
     skipped: list[str] = []
     for record in records:
         page = str(record["page"])
@@ -174,7 +179,11 @@ def build_metadata(records: list[dict[str, object]]) -> dict[str, dict[str, str]
                 rarity = f"{base_rarity}-trained"
             else:
                 rarity = str(base_rarity)
-            metadata[f"{character_id}/{filename}"] = {"attribute": attribute, "rarity": rarity}
+            metadata[f"{character_id}/{filename}"] = {
+                "attribute": attribute,
+                "rarity": rarity,
+                "wikiNumber": int(record["wikiNumber"]),
+            }
 
     if skipped:
         print(f"警告：{len(skipped)} 张基础卡缺少可识别资料")
@@ -191,12 +200,12 @@ def loose_filename_key(filename: str) -> tuple[str, bool]:
 
 
 def add_local_filename_aliases(
-    metadata: dict[str, dict[str, str]], manifest: Path
+    metadata: dict[str, dict[str, object]], manifest: Path
 ) -> tuple[list[dict], int]:
     if not manifest.is_file():
         return [], 0
     cards = json.loads(manifest.read_text(encoding="utf-8"))
-    lookup: dict[tuple[str, str, bool], list[dict[str, str]]] = {}
+    lookup: dict[tuple[str, str, bool], list[dict[str, object]]] = {}
     for card_id, values in metadata.items():
         character, filename = card_id.split("/", 1)
         loose, trained = loose_filename_key(filename)

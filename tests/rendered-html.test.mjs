@@ -28,6 +28,9 @@ test("server-renders the finished PJSK card gallery", async () => {
   assert.match(html, /筛选卡面/);
   assert.match(html, /卡面花色/);
   assert.match(html, /游戏内星级/);
+  assert.match(html, /中文/);
+  assert.match(html, /日本語/);
+  assert.match(html, /English/);
   assert.match(html, /评分文件/);
   assert.match(html, /\/pjsk_thumbs\//);
   assert.match(html, /\/character-icons\//);
@@ -38,19 +41,21 @@ test("server-renders the finished PJSK card gallery", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("ships complete Wiki metadata, local icons, and portable ratings", async () => {
-  const [cardsSource, browserSource, pluginSource, ratingsSource, metadataSource, iconFiles, filterIconFiles] = await Promise.all([
+test("ships multilingual card data, local Wiki icons, and portable ratings", async () => {
+  const [cardsSource, browserSource, pluginSource, ratingsSource, metadataSource, titlesSource, iconFiles, filterIconFiles] = await Promise.all([
     readFile(new URL("../app/cards.json", import.meta.url), "utf8"),
     readFile(new URL("../app/CardBrowser.tsx", import.meta.url), "utf8"),
     readFile(new URL("../build/local-card-assets-vite-plugin.ts", import.meta.url), "utf8"),
     readFile(new URL("../data/ratings.json", import.meta.url), "utf8"),
     readFile(new URL("../data/card-metadata.json", import.meta.url), "utf8"),
+    readFile(new URL("../data/card-titles.json", import.meta.url), "utf8"),
     readdir(new URL("../public/character-icons/", import.meta.url)),
     readdir(new URL("../public/filter-icons/", import.meta.url), { recursive: true }),
   ]);
   const cards = JSON.parse(cardsSource);
   const ratings = JSON.parse(ratingsSource);
   const metadata = JSON.parse(metadataSource);
+  const titles = JSON.parse(titlesSource);
   const attributes = new Set(["cool", "cute", "happy", "mysterious", "pure"]);
   const rarities = new Set(["1", "2", "3", "4", "3-trained", "4-trained", "birthday"]);
   assert.equal(cards.length, 2354);
@@ -59,6 +64,13 @@ test("ships complete Wiki metadata, local icons, and portable ratings", async ()
   assert.ok(cards.some((card) => card.trained));
   assert.ok(cards.every((card) => attributes.has(card.attribute)));
   assert.ok(cards.every((card) => rarities.has(card.rarity)));
+  assert.ok(cards.every((card) => Number.isInteger(card.sekaiId)));
+  assert.ok(cards.every((card) => new Set(Object.keys(card.titles)).size === 3));
+  assert.deepEqual(cards.find((card) => card.sekaiId === 4)?.titles, {
+    zh: "黎明前的倾诉",
+    ja: "夜明け前の語らい",
+    en: "Words Before Dawn",
+  });
   assert.equal(new Set(cards.map((card) => card.attribute)).size, 5);
   assert.equal(new Set(cards.map((card) => card.rarity)).size, 7);
   assert.match(browserSource, /pjsk-card-ratings-v1/);
@@ -66,12 +78,19 @@ test("ships complete Wiki metadata, local icons, and portable ratings", async ()
   assert.match(browserSource, /localStorage\.setItem\(STORAGE_KEY/);
   assert.match(browserSource, /\/api\/local-ratings/);
   assert.match(browserSource, /\/character-icons\//);
+  assert.match(browserSource, /cardTitle\(card, language\)/);
+  assert.match(browserSource, /aria-pressed=/);
+  assert.doesNotMatch(browserSource, /view-mode-switch|card-type-badge|setViewMode/);
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
   assert.equal(ratings.version, 1);
   assert.equal(typeof ratings.ratings, "object");
   assert.equal(metadata.version, 1);
   assert.equal(metadata.source, "https://projectsekai.fandom.com/wiki/Card_List");
   assert.ok(Object.keys(metadata.cards).length >= cards.length);
+  assert.ok(cards.every((card) => new Set(Object.keys(metadata.cards[card.id]?.titles ?? {})).size === 3));
+  assert.equal(titles.version, 1);
+  assert.equal(titles.source, "https://sekai.best/card");
+  assert.equal(Object.keys(titles.cards).length, new Set(cards.map((card) => card.sekaiId)).size);
   assert.equal(iconFiles.filter((file) => file.endsWith(".png")).length, 26);
   assert.equal(filterIconFiles.filter((file) => /\.(png|svg)$/i.test(file)).length, 18);
   await access(new URL("../public/og.png", import.meta.url));

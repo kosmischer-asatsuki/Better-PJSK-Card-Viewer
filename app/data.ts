@@ -3,11 +3,16 @@ export type CardRecord = {
   character: string;
   filename: string;
   title: string;
+  titles: Record<CardLanguage, string>;
   trained: boolean;
+  wikiNumber: number;
+  sekaiId: number;
   attribute: CardAttributeId;
   rarity: CardRarityId;
   imageUrl?: string;
 };
+
+export type CardLanguage = "zh" | "ja" | "en";
 
 export type CardAttributeId = "cool" | "cute" | "happy" | "mysterious" | "pure";
 export type CardRarityId = "1" | "2" | "3" | "4" | "3-trained" | "4-trained" | "birthday";

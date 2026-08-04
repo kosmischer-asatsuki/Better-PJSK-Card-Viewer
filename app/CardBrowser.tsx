@@ -9,6 +9,7 @@ import {
   CHARACTERS,
   GROUP_BY_CHARACTER,
   GROUPS,
+  type CardLanguage,
   type CardRecord,
 } from "./data";
 
@@ -18,8 +19,13 @@ const PAGE_SIZE = 48;
 
 type Ratings = Record<string, number>;
 type RatingSyncStatus = "loading" | "saving" | "synced" | "local-only" | "error";
-type ViewMode = "all" | "normal" | "trained";
 type SortMode = "catalog" | "rating" | "title";
+
+const LANGUAGES: { id: CardLanguage; label: string; shortLabel: string }[] = [
+  { id: "zh", label: "中文", shortLabel: "中" },
+  { id: "ja", label: "日本語", shortLabel: "日" },
+  { id: "en", label: "English", shortLabel: "EN" },
+];
 
 function assetUrl(card: CardRecord, thumbnail = false) {
   const [character, ...filenameParts] = card.id.split("/");
@@ -27,6 +33,10 @@ function assetUrl(card: CardRecord, thumbnail = false) {
   const localFilename = thumbnail ? filename.replace(/\.png$/i, ".webp") : filename;
   const directory = thumbnail ? "pjsk_thumbs" : "pjsk_cards";
   return `/${directory}/${encodeURIComponent(character)}/${encodeURIComponent(localFilename)}`;
+}
+
+function cardTitle(card: CardRecord, language: CardLanguage) {
+  return card.titles?.[language] || card.title;
 }
 
 function toggleInSet<T>(current: Set<T>, value: T) {
@@ -155,17 +165,20 @@ function FilterPanel({
           <span className="eyebrow">MULTI FILTER</span>
           <h2>筛选卡面</h2>
         </div>
-        {onDone ? (
-          <button type="button" className="icon-button" onClick={onDone} aria-label="关闭筛选">
-            ×
-          </button>
-        ) : null}
+        <div className="filter-heading-actions">
+          <button type="button" className="filter-reset-all" onClick={clearFilters}>重置全部</button>
+          {onDone ? (
+            <button type="button" className="icon-button" onClick={onDone} aria-label="关闭筛选">
+              ×
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <section className="filter-section">
         <div className="filter-section-title">
           <h3>团体</h3>
-          <button type="button" onClick={() => setSelectedGroups(new Set())}>全部</button>
+          <button type="button" onClick={() => setSelectedGroups(new Set())}>重置</button>
         </div>
         <div className="group-filter-list">
           {GROUPS.map((group) => {
@@ -175,6 +188,7 @@ function FilterPanel({
                 key={group.id}
                 type="button"
                 className={`group-filter-row ${active ? "is-active" : ""}`}
+                aria-pressed={active}
                 style={{ "--group-color": group.color, "--group-soft": group.softColor } as React.CSSProperties}
                 onClick={() => setSelectedGroups(toggleInSet(selectedGroups, group.id))}
               >
@@ -193,7 +207,7 @@ function FilterPanel({
       <section className="filter-section character-filter-section">
         <div className="filter-section-title">
           <h3>角色</h3>
-          <button type="button" onClick={() => setSelectedCharacters(new Set())}>选择所有人</button>
+          <button type="button" onClick={() => setSelectedCharacters(new Set())}>重置</button>
         </div>
         <div className="character-groups">
           {GROUPS.map((group) => (
@@ -207,6 +221,7 @@ function FilterPanel({
                       type="button"
                       key={character.id}
                       className={`character-pill ${active ? "is-active" : ""}`}
+                      aria-pressed={active}
                       onClick={() => setSelectedCharacters(toggleInSet(selectedCharacters, character.id))}
                       title={character.romanized}
                     >
@@ -225,7 +240,7 @@ function FilterPanel({
       <section className="filter-section">
         <div className="filter-section-title">
           <h3>卡面花色 <small>ATTRIBUTES</small></h3>
-          <button type="button" onClick={() => setSelectedAttributes(new Set())}>全部</button>
+          <button type="button" onClick={() => setSelectedAttributes(new Set())}>重置</button>
         </div>
         <div className="attribute-filter-grid">
           {ATTRIBUTES.map((attribute) => {
@@ -235,6 +250,7 @@ function FilterPanel({
                 type="button"
                 key={attribute.id}
                 className={active ? "is-active" : ""}
+                aria-pressed={active}
                 style={{ "--attribute-color": attribute.color } as React.CSSProperties}
                 onClick={() => setSelectedAttributes(toggleInSet(selectedAttributes, attribute.id))}
               >
@@ -249,7 +265,7 @@ function FilterPanel({
       <section className="filter-section">
         <div className="filter-section-title">
           <h3>游戏内星级</h3>
-          <button type="button" onClick={() => setSelectedCardRarities(new Set())}>全部</button>
+          <button type="button" onClick={() => setSelectedCardRarities(new Set())}>重置</button>
         </div>
         <div className="card-rarity-filter-grid">
           {CARD_RARITIES.map((rarity) => {
@@ -258,12 +274,13 @@ function FilterPanel({
               <button
                 type="button"
                 key={rarity.id}
-                className={active ? "is-active" : ""}
+                className={`${active ? "is-active" : ""} ${rarity.id.endsWith("-trained") ? "is-trained-rarity" : ""}`}
+                aria-pressed={active}
                 title={rarity.name}
+                aria-label={rarity.name}
                 onClick={() => setSelectedCardRarities(toggleInSet(selectedCardRarities, rarity.id))}
               >
                 <WikiIcon src={rarity.icon} alt="" />
-                <span>{rarity.name}</span>
               </button>
             );
           })}
@@ -273,7 +290,7 @@ function FilterPanel({
       <section className="filter-section">
         <div className="filter-section-title">
           <h3>我的评分</h3>
-          <button type="button" onClick={() => setSelectedRatings(new Set())}>全部</button>
+          <button type="button" onClick={() => setSelectedRatings(new Set())}>重置</button>
         </div>
         <div className="rating-filter-grid">
           {[1, 2, 3, 4, 5].map((rating) => (
@@ -281,6 +298,7 @@ function FilterPanel({
               type="button"
               key={rating}
               className={selectedRatings.has(rating) ? "is-active" : ""}
+              aria-pressed={selectedRatings.has(rating)}
               onClick={() => setSelectedRatings(toggleInSet(selectedRatings, rating))}
             >
               <span>★</span>{rating}
@@ -289,6 +307,7 @@ function FilterPanel({
           <button
             type="button"
             className={selectedRatings.has(0) ? "is-active" : ""}
+            aria-pressed={selectedRatings.has(0)}
             onClick={() => setSelectedRatings(toggleInSet(selectedRatings, 0))}
           >
             未评分
@@ -330,7 +349,6 @@ function FilterPanel({
 
       <p className="filter-logic-note">同类选项取并集，不同条件取交集。评分同时保存到浏览器与本地文件。</p>
       <div className="filter-panel-actions">
-        <button type="button" className="button button-secondary" onClick={clearFilters}>重置</button>
         {onDone ? (
           <button type="button" className="button button-primary" onClick={onDone}>查看 {resultCount} 张</button>
         ) : (
@@ -351,7 +369,7 @@ export default function CardBrowser() {
   const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set());
   const [selectedCardRarities, setSelectedCardRarities] = useState<Set<string>>(new Set());
   const [selectedRatings, setSelectedRatings] = useState<Set<number>>(new Set());
-  const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [language, setLanguage] = useState<CardLanguage>("zh");
   const [sortMode, setSortMode] = useState<SortMode>("catalog");
   const [query, setQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -473,11 +491,9 @@ export default function CardBrowser() {
       if (selectedAttributes.size && !selectedAttributes.has(card.attribute)) return false;
       if (selectedCardRarities.size && !selectedCardRarities.has(card.rarity)) return false;
       if (selectedRatings.size && !selectedRatings.has(rating)) return false;
-      if (viewMode === "trained" && !card.trained) return false;
-      if (viewMode === "normal" && card.trained) return false;
       if (
         normalizedQuery &&
-        !`${card.title} ${card.filename} ${character.name} ${character.romanized} ${group.name}`
+        !`${Object.values(card.titles).join(" ")} ${card.filename} ${character.name} ${character.romanized} ${group.name}`
           .toLocaleLowerCase()
           .includes(normalizedQuery)
       ) return false;
@@ -487,18 +503,19 @@ export default function CardBrowser() {
     if (sortMode === "rating") {
       filtered.sort((a, b) => (ratings[b.id] ?? 0) - (ratings[a.id] ?? 0) || a.id.localeCompare(b.id));
     } else if (sortMode === "title") {
-      filtered.sort((a, b) => a.title.localeCompare(b.title, "zh-CN"));
+      filtered.sort((a, b) => cardTitle(a, language).localeCompare(cardTitle(b, language), language === "ja" ? "ja" : language === "zh" ? "zh-CN" : "en"));
     }
     return filtered;
-  }, [query, ratings, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
+  }, [language, query, ratings, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setVisibleCount(PAGE_SIZE));
     return () => window.cancelAnimationFrame(frame);
-  }, [query, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode, viewMode]);
+  }, [language, query, selectedAttributes, selectedCardRarities, selectedCharacters, selectedGroups, selectedRatings, sortMode]);
 
   const selectedIndex = selectedCardId ? filteredCards.findIndex((card) => card.id === selectedCardId) : -1;
   const selectedCard = selectedIndex >= 0 ? filteredCards[selectedIndex] : null;
+  const selectedCardTitle = selectedCard ? cardTitle(selectedCard, language) : "";
 
   const moveSelected = useCallback((direction: number) => {
     if (!filteredCards.length || selectedIndex < 0) return;
@@ -523,11 +540,10 @@ export default function CardBrowser() {
     setSelectedAttributes(new Set());
     setSelectedCardRarities(new Set());
     setSelectedRatings(new Set());
-    setViewMode("all");
     setQuery("");
   };
 
-  const activeFilterCount = selectedGroups.size + selectedCharacters.size + selectedAttributes.size + selectedCardRarities.size + selectedRatings.size + (viewMode === "all" ? 0 : 1);
+  const activeFilterCount = selectedGroups.size + selectedCharacters.size + selectedAttributes.size + selectedCardRarities.size + selectedRatings.size;
   const ratedValues = Object.values(ratings);
   const averageRating = ratedValues.length
     ? (ratedValues.reduce((sum, rating) => sum + rating, 0) / ratedValues.length).toFixed(1)
@@ -601,9 +617,17 @@ export default function CardBrowser() {
             <button type="button" className="mobile-filter-button" onClick={() => setFiltersOpen(true)}>
               筛选 {activeFilterCount ? <b>{activeFilterCount}</b> : null}
             </button>
-            <div className="view-mode-switch" aria-label="卡面类型">
-              {([['all', '全部'], ['normal', '特训前'], ['trained', '特训后']] as [ViewMode, string][]).map(([mode, label]) => (
-                <button key={mode} type="button" className={viewMode === mode ? "is-active" : ""} onClick={() => setViewMode(mode)}>{label}</button>
+            <div className="language-switch" aria-label="卡面标题语言">
+              {LANGUAGES.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={language === option.id ? "is-active" : ""}
+                  onClick={() => setLanguage(option.id)}
+                  title={option.label}
+                >
+                  <span>{option.shortLabel}</span><b>{option.label}</b>
+                </button>
               ))}
             </div>
             <label className="sort-select">
@@ -628,6 +652,7 @@ export default function CardBrowser() {
                   const character = CHARACTER_BY_ID[card.character];
                   const group = GROUP_BY_CHARACTER[card.character];
                   const rating = ratings[card.id] ?? 0;
+                  const displayTitle = cardTitle(card, language);
                   return (
                     <article
                       className="card-tile"
@@ -643,14 +668,13 @@ export default function CardBrowser() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={assetUrl(card, true)}
-                          alt={`${character.name}「${card.title}」卡面`}
+                          alt={`${character.name}「${displayTitle}」卡面`}
                           loading="lazy"
                           onError={(event) => {
                             const fallback = assetUrl(card);
                             if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback;
                           }}
                         />
-                        <span className="card-type-badge">{CARD_RARITIES.find((item) => item.id === card.rarity)!.shortName}</span>
                         <span className="card-wiki-badges">
                           <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={card.attribute} />
                           <WikiIcon src={CARD_RARITIES.find((item) => item.id === card.rarity)!.icon} alt={card.rarity} />
@@ -662,7 +686,7 @@ export default function CardBrowser() {
                           <CharacterAvatar character={character} className="mini-character-mark" />
                           <span><strong>{character.name}</strong><small style={{ color: group.color }}>{group.shortName}</small></span>
                         </div>
-                        <h3 title={card.title}>{card.title}</h3>
+                        <h3 title={displayTitle}>{displayTitle}</h3>
                         <StarRating compact value={rating} onChange={(next) => setRating(card.id, next)} />
                       </div>
                     </article>
@@ -720,14 +744,14 @@ export default function CardBrowser() {
       ) : null}
 
       {selectedCard ? (
-        <div className="image-modal" role="dialog" aria-modal="true" aria-label={`${selectedCard.title} 原图`}>
+        <div className="image-modal" role="dialog" aria-modal="true" aria-label={`${selectedCardTitle} 原图`}>
           <button type="button" className="modal-close" onClick={() => setSelectedCardId(null)} aria-label="关闭原图">×</button>
           <button type="button" className="modal-nav modal-prev" onClick={() => moveSelected(-1)} aria-label="上一张">‹</button>
           <div className="modal-image-stage" onClick={() => setSelectedCardId(null)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={assetUrl(selectedCard)}
-              alt={`${CHARACTER_BY_ID[selectedCard.character].name}「${selectedCard.title}」原图`}
+              alt={`${CHARACTER_BY_ID[selectedCard.character].name}「${selectedCardTitle}」原图`}
               onClick={(event) => event.stopPropagation()}
             />
           </div>
@@ -735,7 +759,7 @@ export default function CardBrowser() {
           <div className="modal-info">
             <div className="modal-title-block">
               <span style={{ color: GROUP_BY_CHARACTER[selectedCard.character].color }}>{GROUP_BY_CHARACTER[selectedCard.character].name}</span>
-              <h2>{selectedCard.title}</h2>
+              <h2>{selectedCardTitle}</h2>
               <p>
                 {CHARACTER_BY_ID[selectedCard.character].name} · {ATTRIBUTES.find((item) => item.id === selectedCard.attribute)!.name} · {CARD_RARITIES.find((item) => item.id === selectedCard.rarity)!.name} · {selectedIndex + 1} / {filteredCards.length}
               </p>

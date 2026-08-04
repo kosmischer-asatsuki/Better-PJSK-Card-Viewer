@@ -32,6 +32,9 @@ def card_record(path: Path, metadata: dict[str, dict[str, str]]) -> dict[str, ob
         "trained": trained,
     }
     record.update(metadata.get(str(record["id"]), {}))
+    titles = record.get("titles")
+    if isinstance(titles, dict) and isinstance(titles.get("en"), str):
+        record["title"] = titles["en"]
     return record
 
 
