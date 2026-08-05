@@ -45,11 +45,11 @@ export const ATTRIBUTES: { id: CardAttributeId; name: string; color: string; ico
 
 export const CARD_RARITIES: { id: CardRarityId; name: string; shortName: string; icon: string }[] = [
   { id: "1", name: "1 星", shortName: "1★", icon: "/filter-icons/rarities/1-star.png" },
-  { id: "2", name: "2 星", shortName: "2★", icon: "/filter-icons/rarities/2-star.png" },
+  { id: "2", name: "2 星", shortName: "2★", icon: "/filter-icons/rarities/1-star.png" },
   { id: "3", name: "3 星", shortName: "3★", icon: "/filter-icons/rarities/1-star.png" },
   { id: "4", name: "4 星", shortName: "4★", icon: "/filter-icons/rarities/1-star.png" },
   { id: "3-trained", name: "3 星彩（特训后）", shortName: "3★ 特训后", icon: "/filter-icons/rarities/3-star-trained.png" },
-  { id: "4-trained", name: "4 星彩（特训后）", shortName: "4★ 特训后", icon: "/filter-icons/rarities/4-star-trained.png" },
+  { id: "4-trained", name: "4 星彩（特训后）", shortName: "4★ 特训后", icon: "/filter-icons/rarities/3-star-trained.png" },
   { id: "birthday", name: "生日卡", shortName: "生日卡", icon: "/filter-icons/rarities/birthday.png" },
 ];
 

@@ -597,6 +597,7 @@ button {
 }
 
 .rarity-icon-strip {
+  --rarity-star-size: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -604,22 +605,37 @@ button {
 }
 
 .card-rarity-filter-grid button .rarity-icon-strip {
-  width: 48px;
   height: 40px;
 }
 
-.card-rarity-filter-grid button .rarity-icon-strip img {
-  width: 11px;
-  height: 11px;
+.rarity-icon-strip > img,
+.rarity-star-sprite {
+  width: var(--rarity-star-size);
+  height: var(--rarity-star-size);
+  flex: 0 0 var(--rarity-star-size);
 }
 
-.card-rarity-filter-grid button .rarity-icon-strip.is-3-stars img {
-  width: 13px;
-  height: 13px;
+.rarity-icon-strip > img {
+  object-fit: contain;
 }
 
-.card-rarity-filter-grid button.is-trained-rarity img {
-  transform: rotate(-90deg);
+.rarity-star-sprite {
+  display: block;
+  overflow: hidden;
+}
+
+.rarity-star-sprite img {
+  display: block;
+  width: var(--rarity-star-size);
+  height: auto;
+  max-width: none;
+  transform: none;
+}
+
+.card-rarity-filter-grid button .rarity-icon-strip > img,
+.card-rarity-filter-grid button .rarity-star-sprite img {
+  width: var(--rarity-star-size);
+  height: auto;
 }
 
 .card-rarity-filter-grid button:hover,
@@ -971,41 +987,39 @@ button {
   letter-spacing: 0.05em;
 }
 
-.card-wiki-badges {
-  position: absolute;
-  right: 9px;
-  top: 9px;
-  height: 31px;
+.card-meta-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.card-meta-heading .card-character-row {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-meta-badges {
+  min-width: 0;
+  height: 26px;
   padding: 3px 5px;
   display: flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.86);
-  box-shadow: 0 3px 12px rgba(20,20,28,0.13);
-  backdrop-filter: blur(6px);
+  flex: 0 0 auto;
+  border: 1px solid #e4e2e8;
+  background: #f8f7fa;
 }
 
-.card-wiki-badges img {
-  width: 23px;
-  height: 23px;
+.card-meta-badges > img {
+  width: 18px;
+  height: 18px;
   object-fit: contain;
 }
 
-.card-wiki-badges .card-rarity-icon.is-trained {
-  transform: rotate(-90deg);
-}
-
-.card-wiki-badges .rarity-icon-strip {
-  width: 23px;
-  height: 23px;
+.card-meta-badges .rarity-icon-strip {
+  --rarity-star-size: 8px;
   gap: 0;
-}
-
-.card-wiki-badges .rarity-icon-strip img,
-.card-wiki-badges .rarity-icon-strip.is-3-stars img {
-  width: 6px;
-  height: 6px;
 }
 
 .card-open-hint {

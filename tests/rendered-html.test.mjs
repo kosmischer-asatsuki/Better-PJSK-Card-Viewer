@@ -84,8 +84,10 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(browserSource, /\/character-icons\//);
   assert.match(browserSource, /cardTitle\(card, language\)/);
   assert.match(browserSource, /document\.documentElement\.lang = LANGUAGE_TAGS\[language\]/);
-  assert.match(browserSource, /card-rarity-icon/);
-  assert.match(browserSource, /Array\.from\(\{ length: untrainedStarCount \}/);
+  assert.match(browserSource, /card-meta-badges/);
+  assert.doesNotMatch(browserSource, /card-wiki-badges/);
+  assert.match(browserSource, /Array\.from\(\{ length: starCount \}/);
+  assert.match(browserSource, /rarity-star-sprite/);
   assert.match(browserSource, /aria-pressed=/);
   assert.doesNotMatch(browserSource, /view-mode-switch|card-type-badge|setViewMode/);
   assert.match(appDataSource, /id: "3"[^\n]+icon: "\/filter-icons\/rarities\/1-star\.png"/);
@@ -96,7 +98,9 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(i18nSource, /Filter Cards/);
   assert.match(i18nSource, /すべてリセット/);
   assert.match(i18nSource, /Reset All/);
-  assert.match(cssSource, /\.card-wiki-badges \.card-rarity-icon\.is-trained[\s\S]*?rotate\(-90deg\)/);
+  assert.match(cssSource, /\.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 12px/);
+  assert.match(cssSource, /\.card-meta-badges \.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 8px/);
+  assert.doesNotMatch(cssSource, /\.card-wiki-badges|is-trained-rarity/);
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
   assert.equal(ratings.version, 1);
   assert.equal(typeof ratings.ratings, "object");

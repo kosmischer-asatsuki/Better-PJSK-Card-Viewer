@@ -105,29 +105,30 @@ function WikiIcon({ src, alt, className }: { src: string; alt: string; className
 
 function RarityIcon({ rarityId, alt, className }: { rarityId: CardRarityId; alt: string; className?: string }) {
   const rarity = CARD_RARITIES.find((item) => item.id === rarityId)!;
-  const untrainedStarCount = rarityId === "3" || rarityId === "4" ? Number(rarityId) : 0;
+  const starCount = rarityId === "birthday" ? 0 : Number(rarityId[0]);
+  const trained = rarityId.endsWith("-trained");
 
-  if (untrainedStarCount) {
+  if (starCount) {
     return (
       <span
-        className={`rarity-icon-strip is-${untrainedStarCount}-stars ${className ?? ""}`}
+        className={`rarity-icon-strip ${trained ? "is-trained-stars" : "is-untrained-stars"} ${className ?? ""}`}
         role={alt ? "img" : undefined}
         aria-label={alt || undefined}
       >
-        {Array.from({ length: untrainedStarCount }, (_, index) => (
-          <WikiIcon key={index} src={rarity.icon} alt="" />
+        {Array.from({ length: starCount }, (_, index) => (
+          trained ? (
+            <span className="rarity-star-sprite" key={index}>
+              <WikiIcon src={rarity.icon} alt="" />
+            </span>
+          ) : (
+            <WikiIcon key={index} src={rarity.icon} alt="" />
+          )
         ))}
       </span>
     );
   }
 
-  return (
-    <WikiIcon
-      src={rarity.icon}
-      alt={alt}
-      className={`${className ?? ""} ${rarityId.endsWith("-trained") ? "is-trained" : ""}`.trim()}
-    />
-  );
+  return <WikiIcon src={rarity.icon} alt={alt} className={className} />;
 }
 
 function StarRating({
@@ -324,7 +325,7 @@ function FilterPanel({
               <button
                 type="button"
                 key={rarity.id}
-                className={`${active ? "is-active" : ""} ${rarity.id.endsWith("-trained") ? "is-trained-rarity" : ""}`}
+                className={active ? "is-active" : ""}
                 aria-pressed={active}
                 title={rarityName(rarity.id, language)}
                 aria-label={rarityName(rarity.id, language)}
@@ -739,20 +740,18 @@ export default function CardBrowser() {
                             if (!event.currentTarget.src.endsWith(fallback)) event.currentTarget.src = fallback;
                           }}
                         />
-                        <span className="card-wiki-badges">
-                          <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={attributeName(card.attribute, language)} />
-                          <RarityIcon
-                            rarityId={card.rarity}
-                            alt={rarityName(card.rarity, language)}
-                            className="card-rarity-icon"
-                          />
-                        </span>
                         <span className="card-open-hint">{copy.openOriginal}</span>
                       </div>
                       <div className="card-meta">
-                        <div className="card-character-row">
-                          <CharacterAvatar character={character} className="mini-character-mark" />
-                          <span><strong>{displayCharacterName}</strong><small style={{ color: group.color }}>{groupName(group, language)}</small></span>
+                        <div className="card-meta-heading">
+                          <div className="card-character-row">
+                            <CharacterAvatar character={character} className="mini-character-mark" />
+                            <span><strong>{displayCharacterName}</strong><small style={{ color: group.color }}>{groupName(group, language)}</small></span>
+                          </div>
+                          <span className="card-meta-badges">
+                            <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={attributeName(card.attribute, language)} />
+                            <RarityIcon rarityId={card.rarity} alt={rarityName(card.rarity, language)} />
+                          </span>
                         </div>
                         <h3 title={displayTitle}>{displayTitle}</h3>
                         <StarRating compact language={language} value={rating} onChange={(next) => setRating(card.id, next)} />
