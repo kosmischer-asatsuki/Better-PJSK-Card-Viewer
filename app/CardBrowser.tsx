@@ -128,7 +128,7 @@ function RarityIcon({ rarityId, alt, className }: { rarityId: CardRarityId; alt:
     );
   }
 
-  return <WikiIcon src={rarity.icon} alt={alt} className={className} />;
+  return <WikiIcon src={rarity.icon} alt={alt} className={`${className ?? ""} rarity-birthday-icon`.trim()} />;
 }
 
 function StarRating({

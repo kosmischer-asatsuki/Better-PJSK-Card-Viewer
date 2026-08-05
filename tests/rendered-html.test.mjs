@@ -99,6 +99,9 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(i18nSource, /すべてリセット/);
   assert.match(i18nSource, /Reset All/);
   assert.match(cssSource, /\.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 12px/);
+  assert.match(cssSource, /\.card-rarity-filter-grid button \{[\s\S]*?min-height: 48px/);
+  assert.match(cssSource, /\.card-rarity-filter-grid button \.rarity-icon-strip \{[\s\S]*?width: 100%[\s\S]*?justify-content: center/);
+  assert.match(cssSource, /\.card-rarity-filter-grid button > \.rarity-birthday-icon \{[\s\S]*?width: 20px[\s\S]*?height: 20px/);
   assert.match(cssSource, /\.card-meta-badges \.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 8px/);
   assert.doesNotMatch(cssSource, /\.card-wiki-badges|is-trained-rarity/);
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
