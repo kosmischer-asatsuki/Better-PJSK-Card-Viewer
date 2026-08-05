@@ -1,6 +1,7 @@
+````text
 # PJSK 卡面档案室（本地版）
 
-这是一个完全在本机运行的 Project SEKAI 卡面预览器。卡面读取自 `./pjsk_cards`，缩略图读取自 `./pjsk_thumbs`，角色头像、团体 Logo、卡面花色、游戏内星级和中日英标题均缓存于项目中，运行时不依赖线上图床。
+这是一个完全在本机运行的 Project SEKAI 卡面预览器，因此可以高流畅度的运行。卡面读取自 `./pjsk_cards`，缩略图读取自 `./pjsk_thumbs`，角色头像、团体 Logo、卡面花色、游戏内星级和中日英标题均缓存于项目中，运行时不依赖线上图床。
 
 页面右上角可切换中文、日文和英文。语言切换会同步更新整套界面、角色与团体名称、筛选器、弹窗和卡面标题；3 星与 4 星在特训前显示横向金色星星，特训后显示横向彩色星星。
 
@@ -126,4 +127,5 @@ start-local.cmd             本地启动入口
 refresh-cards.cmd           更新清单与缩略图
 refresh-icons.cmd           更新角色头像
 refresh-card-data.cmd       更新卡面资料和筛选图标
-```
+```xxxxxxxxxx pjsk_cards/                 原始 PNG 卡面（不提交到 Git）pjsk_thumbs/                本地 WebP 缩略图（不提交到 Git）public/character-icons/     萌娘百科角色 icon 的本地缓存public/filter-icons/        花色、稀有度和团体 Logo 的本地缓存data/card-metadata.json     Fandom 卡面花色与稀有度缓存data/card-titles.json       Sekai Viewer 中、日、英卡面标题缓存data/ratings.json           可复制、可同步的已评级星级文件app/cards.json              卡面清单scripts/prepare_local_assets.pyscripts/fetch_character_icons.pyscripts/fetch_fandom_metadata.pyscripts/fetch_sekai_titles.pystart-local.cmd             本地启动入口refresh-cards.cmd           更新清单与缩略图refresh-icons.cmd           更新角色头像refresh-card-data.cmd       更新卡面资料和筛选图标text
+````
