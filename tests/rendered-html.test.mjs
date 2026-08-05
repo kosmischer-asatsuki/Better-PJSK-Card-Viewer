@@ -84,6 +84,11 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(browserSource, /\/character-icons\//);
   assert.match(browserSource, /cardTitle\(card, language\)/);
   assert.match(browserSource, /document\.documentElement\.lang = LANGUAGE_TAGS\[language\]/);
+  assert.match(browserSource, /\/\^\[1-5\]\$\/\.test\(event\.key\)/);
+  assert.match(browserSource, /event\.key === "Enter" \|\| event\.key === "ArrowRight"/);
+  assert.match(browserSource, /event\.key === "Backspace" \|\| event\.key === "ArrowLeft"/);
+  assert.match(browserSource, /setRating\(selectedCard\.id, Number\(event\.key\)\)/);
+  assert.match(browserSource, /modal-keyboard-hint/);
   assert.match(browserSource, /card-meta-badges/);
   assert.doesNotMatch(browserSource, /card-wiki-badges/);
   assert.match(browserSource, /Array\.from\(\{ length: starCount \}/);
@@ -98,6 +103,9 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(i18nSource, /Filter Cards/);
   assert.match(i18nSource, /すべてリセット/);
   assert.match(i18nSource, /Reset All/);
+  assert.match(i18nSource, /Enter 下一张/);
+  assert.match(i18nSource, /Enterで次へ/);
+  assert.match(i18nSource, /Enter next/);
   assert.match(cssSource, /\.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 12px/);
   assert.match(cssSource, /\.card-rarity-filter-grid button \{[\s\S]*?min-height: 48px/);
   assert.match(cssSource, /\.card-rarity-filter-grid button \.rarity-icon-strip \{[\s\S]*?width: 100%[\s\S]*?justify-content: center/);

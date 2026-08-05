@@ -61,6 +61,7 @@ export const UI_COPY = {
     previousCard: "上一张",
     nextCard: "下一张",
     openNewWindow: "新窗口打开原图 ↗",
+    keyboardHint: "键盘：1–5 评分 · Enter 下一张 · Backspace 上一张",
     invalidRatings: "导入失败：请选择有效的评分 JSON 文件",
   },
   ja: {
@@ -117,6 +118,7 @@ export const UI_COPY = {
     previousCard: "前のカード",
     nextCard: "次のカード",
     openNewWindow: "新しいウィンドウで原寸表示 ↗",
+    keyboardHint: "キーボード：1–5で評価・Enterで次へ・Backspaceで前へ",
     invalidRatings: "読み込み失敗：有効な評価JSONファイルを選択してください",
   },
   en: {
@@ -173,6 +175,7 @@ export const UI_COPY = {
     previousCard: "Previous card",
     nextCard: "Next card",
     openNewWindow: "Open original in a new window ↗",
+    keyboardHint: "Keyboard: 1–5 rate · Enter next · Backspace previous",
     invalidRatings: "Import failed: select a valid ratings JSON file",
   },
 } as const;

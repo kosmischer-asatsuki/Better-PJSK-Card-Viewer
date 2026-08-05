@@ -1316,6 +1316,13 @@ footer p {
   color: #8e8e97;
 }
 
+.modal-keyboard-hint {
+  margin: 7px 0 0;
+  color: #7e7e88;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
 .original-link {
   min-height: 43px;
   padding: 0 18px;

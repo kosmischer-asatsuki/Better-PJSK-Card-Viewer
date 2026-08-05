@@ -589,13 +589,33 @@ export default function CardBrowser() {
   useEffect(() => {
     if (!selectedCard) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedCardId(null);
-      if (event.key === "ArrowLeft") moveSelected(-1);
-      if (event.key === "ArrowRight") moveSelected(1);
+      if (event.repeat) return;
+
+      if (/^[1-5]$/.test(event.key)) {
+        event.preventDefault();
+        setRating(selectedCard.id, Number(event.key));
+        return;
+      }
+
+      if (event.key === "Escape") {
+        setSelectedCardId(null);
+        return;
+      }
+
+      if (event.key === "Enter" || event.key === "ArrowRight") {
+        event.preventDefault();
+        moveSelected(1);
+        return;
+      }
+
+      if (event.key === "Backspace" || event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveSelected(-1);
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [moveSelected, selectedCard]);
+  }, [moveSelected, selectedCard, setRating]);
 
   const clearFilters = () => {
     setSelectedGroups(new Set());
@@ -835,6 +855,7 @@ export default function CardBrowser() {
             <div className="modal-rating-block">
               <small>{copy.myRating}</small>
               <StarRating dark language={language} value={ratings[selectedCard.id] ?? 0} onChange={(next) => setRating(selectedCard.id, next)} />
+              <p className="modal-keyboard-hint">{copy.keyboardHint}</p>
             </div>
             <a href={assetUrl(selectedCard)} target="_blank" rel="noreferrer" className="original-link">{copy.openNewWindow}</a>
           </div>
