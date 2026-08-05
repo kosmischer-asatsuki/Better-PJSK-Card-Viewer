@@ -4,26 +4,66 @@
 
 页面右上角可切换中文、日文和英文。语言切换会同步更新整套界面、角色与团体名称、筛选器、弹窗和卡面标题；3 星与 4 星在特训前显示横向金色星星，特训后显示横向彩色星星。
 
-## 启动
+## 环境要求
 
-Windows 下双击：
+- [Node.js](https://nodejs.org/) 22.13.0 或更高版本（安装时会自带 npm）。
+- Python 3.10 或更高版本。
+- 足够的磁盘空间用于保存原始卡面和生成的缩略图。
 
-```text
-start-local.cmd
+`node_modules`、`pjsk_cards` 和 `pjsk_thumbs` 均不会上传到 GitHub。克隆项目后可通过以下步骤在本机重建。
+
+## 首次克隆与构建
+
+1. 克隆项目并进入项目目录：
+
+```bash
+git clone <你的 GitHub 仓库地址>
+cd PJSK
 ```
 
-服务会固定运行在：
+2. 根据 `package-lock.json` 安装前端依赖并重建 `node_modules`：
+
+```bash
+npm ci
+```
+
+3. 安装卡面下载及图片处理所需的 Python 模块：
+
+```bash
+python -m pip install requests beautifulsoup4 pillow
+```
+
+4. 下载卡面。脚本默认保存到 `./pjsk_cards`，支持跳过已有文件和断点续传：
+
+```bash
+python download.py
+```
+
+5. 生成 `./pjsk_thumbs` 缩略图并刷新本地卡面清单：
+
+```bash
+npm run prepare:local
+```
+
+6. 检查项目能否正常构建：
+
+```bash
+npm run build
+```
+
+7. 启动本地服务：
+
+```bash
+npm run local
+```
+
+浏览器访问：
 
 ```text
 http://127.0.0.1:3000
 ```
 
-也可以在终端中启动：
-
-```bash
-pnpm install
-pnpm run local
-```
+Windows 用户完成首次安装后，日常使用也可以直接双击 `start-local.cmd` 启动。再次执行 `npm ci` 时，npm 会按照锁文件恢复一致的依赖版本，无需从 GitHub 下载 `node_modules`。
 
 ## 更新卡面
 
