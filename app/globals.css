@@ -970,6 +970,10 @@ button {
   object-fit: contain;
 }
 
+.card-wiki-badges .card-rarity-icon.is-trained {
+  transform: rotate(-90deg);
+}
+
 .card-open-hint {
   right: 9px;
   bottom: 9px;

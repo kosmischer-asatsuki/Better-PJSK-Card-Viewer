@@ -23,7 +23,7 @@ test("server-renders the finished PJSK card gallery", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>PJSK 卡面档案室｜SEKAI ARCHIVE<\/title>/i);
-  assert.match(html, /PJSK CARD VIEWER/);
+  assert.match(html, /PJSK 卡面预览器/);
   assert.match(html, /2354/);
   assert.match(html, /筛选卡面/);
   assert.match(html, /卡面花色/);
@@ -41,10 +41,12 @@ test("server-renders the finished PJSK card gallery", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("ships multilingual card data, local Wiki icons, and portable ratings", async () => {
-  const [cardsSource, browserSource, pluginSource, ratingsSource, metadataSource, titlesSource, iconFiles, filterIconFiles] = await Promise.all([
+test("ships multilingual card data, a fully localized interface, local Wiki icons, and portable ratings", async () => {
+  const [cardsSource, browserSource, i18nSource, cssSource, pluginSource, ratingsSource, metadataSource, titlesSource, iconFiles, filterIconFiles] = await Promise.all([
     readFile(new URL("../app/cards.json", import.meta.url), "utf8"),
     readFile(new URL("../app/CardBrowser.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/i18n.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../build/local-card-assets-vite-plugin.ts", import.meta.url), "utf8"),
     readFile(new URL("../data/ratings.json", import.meta.url), "utf8"),
     readFile(new URL("../data/card-metadata.json", import.meta.url), "utf8"),
@@ -79,8 +81,15 @@ test("ships multilingual card data, local Wiki icons, and portable ratings", asy
   assert.match(browserSource, /\/api\/local-ratings/);
   assert.match(browserSource, /\/character-icons\//);
   assert.match(browserSource, /cardTitle\(card, language\)/);
+  assert.match(browserSource, /document\.documentElement\.lang = LANGUAGE_TAGS\[language\]/);
+  assert.match(browserSource, /card-rarity-icon/);
   assert.match(browserSource, /aria-pressed=/);
   assert.doesNotMatch(browserSource, /view-mode-switch|card-type-badge|setViewMode/);
+  assert.match(i18nSource, /カードを絞り込む/);
+  assert.match(i18nSource, /Filter Cards/);
+  assert.match(i18nSource, /すべてリセット/);
+  assert.match(i18nSource, /Reset All/);
+  assert.match(cssSource, /\.card-wiki-badges \.card-rarity-icon\.is-trained[\s\S]*?rotate\(-90deg\)/);
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
   assert.equal(ratings.version, 1);
   assert.equal(typeof ratings.ratings, "object");

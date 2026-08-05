@@ -12,6 +12,22 @@ import {
   type CardLanguage,
   type CardRecord,
 } from "./data";
+import {
+  LANGUAGE_TAGS,
+  UI_COPY,
+  attributeName,
+  characterName,
+  currentRating,
+  displayedCount,
+  groupName,
+  memberCount,
+  ratingFileCopy,
+  ratingNotice,
+  rarityName,
+  resultCount as formatResultCount,
+  starLabel,
+  viewResults,
+} from "./i18n";
 
 const cards = cardsData as CardRecord[];
 const STORAGE_KEY = "pjsk-card-ratings-v1";
@@ -19,6 +35,7 @@ const PAGE_SIZE = 48;
 
 type Ratings = Record<string, number>;
 type RatingSyncStatus = "loading" | "saving" | "synced" | "local-only" | "error";
+type RatingNotice = { kind: "exported" | "imported"; count: number } | { kind: "invalid" } | null;
 type SortMode = "catalog" | "rating" | "title";
 
 const LANGUAGES: { id: CardLanguage; label: string; shortLabel: string }[] = [
@@ -88,23 +105,25 @@ function WikiIcon({ src, alt, className }: { src: string; alt: string; className
 function StarRating({
   value,
   onChange,
+  language,
   compact = false,
   dark = false,
 }: {
   value: number;
   onChange: (rating: number) => void;
+  language: CardLanguage;
   compact?: boolean;
   dark?: boolean;
 }) {
   return (
-    <div className={`star-rating ${compact ? "is-compact" : ""} ${dark ? "is-dark" : ""}`} aria-label={`当前评分 ${value || "未评分"}`}>
+    <div className={`star-rating ${compact ? "is-compact" : ""} ${dark ? "is-dark" : ""}`} aria-label={currentRating(language, value)}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
           className={star <= value ? "is-active" : ""}
-          aria-label={`评分 ${star} 星`}
-          title={`${star} 星`}
+          aria-label={starLabel(language, star)}
+          title={starLabel(language, star)}
           onClick={(event) => {
             event.stopPropagation();
             onChange(value === star ? 0 : star);
@@ -131,7 +150,8 @@ type FilterPanelProps = {
   resultCount: number;
   ratingsCount: number;
   ratingSyncStatus: RatingSyncStatus;
-  ratingMessage: string;
+  ratingNotice: RatingNotice;
+  language: CardLanguage;
   exportRatings: () => void;
   importRatings: (file: File) => void;
   clearFilters: () => void;
@@ -152,23 +172,25 @@ function FilterPanel({
   resultCount,
   ratingsCount,
   ratingSyncStatus,
-  ratingMessage,
+  ratingNotice: activeRatingNotice,
+  language,
   exportRatings,
   importRatings,
   clearFilters,
   onDone,
 }: FilterPanelProps) {
+  const copy = UI_COPY[language];
   return (
     <div className="filter-panel-inner">
       <div className="filter-panel-heading">
         <div>
-          <span className="eyebrow">MULTI FILTER</span>
-          <h2>筛选卡面</h2>
+          <span className="eyebrow">{copy.multiFilter}</span>
+          <h2>{copy.filterCards}</h2>
         </div>
         <div className="filter-heading-actions">
-          <button type="button" className="filter-reset-all" onClick={clearFilters}>重置全部</button>
+          <button type="button" className="filter-reset-all" onClick={clearFilters}>{copy.resetAll}</button>
           {onDone ? (
-            <button type="button" className="icon-button" onClick={onDone} aria-label="关闭筛选">
+            <button type="button" className="icon-button" onClick={onDone} aria-label={copy.closeFilters}>
               ×
             </button>
           ) : null}
@@ -177,8 +199,8 @@ function FilterPanel({
 
       <section className="filter-section">
         <div className="filter-section-title">
-          <h3>团体</h3>
-          <button type="button" onClick={() => setSelectedGroups(new Set())}>重置</button>
+          <h3>{copy.groups}</h3>
+          <button type="button" onClick={() => setSelectedGroups(new Set())}>{copy.reset}</button>
         </div>
         <div className="group-filter-list">
           {GROUPS.map((group) => {
@@ -195,8 +217,8 @@ function FilterPanel({
                 <span className="filter-checkbox">{active ? "✓" : ""}</span>
                 <WikiIcon src={group.icon} alt="" className="group-filter-icon" />
                 <span className="group-filter-copy">
-                  <strong>{group.name}</strong>
-                  <small>{group.members.length} 名角色</small>
+                  <strong>{groupName(group, language)}</strong>
+                  <small>{memberCount(language, group.members.length)}</small>
                 </span>
               </button>
             );
@@ -206,13 +228,13 @@ function FilterPanel({
 
       <section className="filter-section character-filter-section">
         <div className="filter-section-title">
-          <h3>角色</h3>
-          <button type="button" onClick={() => setSelectedCharacters(new Set())}>重置</button>
+          <h3>{copy.characters}</h3>
+          <button type="button" onClick={() => setSelectedCharacters(new Set())}>{copy.reset}</button>
         </div>
         <div className="character-groups">
           {GROUPS.map((group) => (
             <div className="character-group" key={group.id}>
-              <div className="character-group-label" style={{ color: group.color }}>{group.shortName}</div>
+              <div className="character-group-label" style={{ color: group.color }}>{groupName(group, language)}</div>
               <div className="character-pills">
                 {group.members.map((character) => {
                   const active = selectedCharacters.has(character.id);
@@ -223,11 +245,11 @@ function FilterPanel({
                       className={`character-pill ${active ? "is-active" : ""}`}
                       aria-pressed={active}
                       onClick={() => setSelectedCharacters(toggleInSet(selectedCharacters, character.id))}
-                      title={character.romanized}
+                      title={characterName(character, language)}
                     >
                       <span className="filter-checkbox">{active ? "✓" : ""}</span>
                       <CharacterAvatar character={character} className="character-mark" />
-                      <span>{character.name}</span>
+                      <span>{characterName(character, language)}</span>
                     </button>
                   );
                 })}
@@ -239,8 +261,8 @@ function FilterPanel({
 
       <section className="filter-section">
         <div className="filter-section-title">
-          <h3>卡面花色 <small>ATTRIBUTES</small></h3>
-          <button type="button" onClick={() => setSelectedAttributes(new Set())}>重置</button>
+          <h3>{copy.attributes} <small>ATTRIBUTES</small></h3>
+          <button type="button" onClick={() => setSelectedAttributes(new Set())}>{copy.reset}</button>
         </div>
         <div className="attribute-filter-grid">
           {ATTRIBUTES.map((attribute) => {
@@ -255,7 +277,7 @@ function FilterPanel({
                 onClick={() => setSelectedAttributes(toggleInSet(selectedAttributes, attribute.id))}
               >
                 <WikiIcon src={attribute.icon} alt="" />
-                <span>{attribute.name}</span>
+                <span>{attributeName(attribute.id, language)}</span>
               </button>
             );
           })}
@@ -264,8 +286,8 @@ function FilterPanel({
 
       <section className="filter-section">
         <div className="filter-section-title">
-          <h3>游戏内星级</h3>
-          <button type="button" onClick={() => setSelectedCardRarities(new Set())}>重置</button>
+          <h3>{copy.gameRarity}</h3>
+          <button type="button" onClick={() => setSelectedCardRarities(new Set())}>{copy.reset}</button>
         </div>
         <div className="card-rarity-filter-grid">
           {CARD_RARITIES.map((rarity) => {
@@ -276,8 +298,8 @@ function FilterPanel({
                 key={rarity.id}
                 className={`${active ? "is-active" : ""} ${rarity.id.endsWith("-trained") ? "is-trained-rarity" : ""}`}
                 aria-pressed={active}
-                title={rarity.name}
-                aria-label={rarity.name}
+                title={rarityName(rarity.id, language)}
+                aria-label={rarityName(rarity.id, language)}
                 onClick={() => setSelectedCardRarities(toggleInSet(selectedCardRarities, rarity.id))}
               >
                 <WikiIcon src={rarity.icon} alt="" />
@@ -289,8 +311,8 @@ function FilterPanel({
 
       <section className="filter-section">
         <div className="filter-section-title">
-          <h3>我的评分</h3>
-          <button type="button" onClick={() => setSelectedRatings(new Set())}>重置</button>
+          <h3>{copy.myRating}</h3>
+          <button type="button" onClick={() => setSelectedRatings(new Set())}>{copy.reset}</button>
         </div>
         <div className="rating-filter-grid">
           {[1, 2, 3, 4, 5].map((rating) => (
@@ -310,29 +332,29 @@ function FilterPanel({
             aria-pressed={selectedRatings.has(0)}
             onClick={() => setSelectedRatings(toggleInSet(selectedRatings, 0))}
           >
-            未评分
+            {copy.unrated}
           </button>
         </div>
       </section>
 
       <section className="filter-section rating-file-section">
         <div className="filter-section-title">
-          <h3>评分文件</h3>
+          <h3>{copy.ratingFile}</h3>
           <span className={`rating-file-status is-${ratingSyncStatus}`}>
-            {ratingSyncStatus === "loading" ? "正在读取…" : null}
-            {ratingSyncStatus === "saving" ? "正在保存…" : null}
-            {ratingSyncStatus === "synced" ? "已同步" : null}
-            {ratingSyncStatus === "local-only" ? "仅浏览器存储" : null}
-            {ratingSyncStatus === "error" ? "同步失败" : null}
+            {ratingSyncStatus === "loading" ? copy.loading : null}
+            {ratingSyncStatus === "saving" ? copy.saving : null}
+            {ratingSyncStatus === "synced" ? copy.synced : null}
+            {ratingSyncStatus === "local-only" ? copy.localOnly : null}
+            {ratingSyncStatus === "error" ? copy.syncFailed : null}
           </span>
         </div>
         <p className="rating-file-copy">
-          {ratingsCount} 条已评级记录，自动保存到 <code>data/ratings.json</code>。
+          {ratingFileCopy(language, ratingsCount)}
         </p>
         <div className="rating-file-actions">
-          <button type="button" className="rating-file-button" onClick={exportRatings}>导出 JSON</button>
+          <button type="button" className="rating-file-button" onClick={exportRatings}>{copy.exportJson}</button>
           <label className="rating-file-button">
-            导入 JSON
+            {copy.importJson}
             <input
               type="file"
               accept="application/json,.json"
@@ -344,15 +366,21 @@ function FilterPanel({
             />
           </label>
         </div>
-        {ratingMessage ? <p className="rating-file-message">{ratingMessage}</p> : null}
+        {activeRatingNotice ? (
+          <p className="rating-file-message">
+            {activeRatingNotice.kind === "invalid"
+              ? copy.invalidRatings
+              : ratingNotice(language, activeRatingNotice.kind, activeRatingNotice.count)}
+          </p>
+        ) : null}
       </section>
 
-      <p className="filter-logic-note">同类选项取并集，不同条件取交集。评分同时保存到浏览器与本地文件。</p>
+      <p className="filter-logic-note">{copy.filterLogic}</p>
       <div className="filter-panel-actions">
         {onDone ? (
-          <button type="button" className="button button-primary" onClick={onDone}>查看 {resultCount} 张</button>
+          <button type="button" className="button button-primary" onClick={onDone}>{viewResults(language, resultCount)}</button>
         ) : (
-          <span className="filter-result-chip">{resultCount} 张结果</span>
+          <span className="filter-result-chip">{formatResultCount(language, resultCount)}</span>
         )}
       </div>
     </div>
@@ -363,7 +391,7 @@ export default function CardBrowser() {
   const [ratings, setRatings] = useState<Ratings>({});
   const [ratingsReady, setRatingsReady] = useState(false);
   const [ratingSyncStatus, setRatingSyncStatus] = useState<RatingSyncStatus>("loading");
-  const [ratingMessage, setRatingMessage] = useState("");
+  const [activeRatingNotice, setActiveRatingNotice] = useState<RatingNotice>(null);
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [selectedCharacters, setSelectedCharacters] = useState<Set<string>>(new Set());
   const [selectedAttributes, setSelectedAttributes] = useState<Set<string>>(new Set());
@@ -375,6 +403,12 @@ export default function CardBrowser() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const copy = UI_COPY[language];
+
+  useEffect(() => {
+    document.documentElement.lang = LANGUAGE_TAGS[language];
+    document.title = copy.pageTitle;
+  }, [copy.pageTitle, language]);
 
   useEffect(() => {
     let cancelled = false;
@@ -465,7 +499,7 @@ export default function CardBrowser() {
     anchor.download = "pjsk-ratings.json";
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    setRatingMessage(`已导出 ${Object.keys(ratings).length} 条评分`);
+    setActiveRatingNotice({ kind: "exported", count: Object.keys(ratings).length });
   }, [ratings]);
 
   const importRatings = useCallback(async (file: File) => {
@@ -473,9 +507,9 @@ export default function CardBrowser() {
       const payload = JSON.parse(await file.text());
       const imported = cleanRatings(payload?.ratings ?? payload);
       setRatings((current) => ({ ...current, ...imported }));
-      setRatingMessage(`已导入 ${Object.keys(imported).length} 条评分`);
+      setActiveRatingNotice({ kind: "imported", count: Object.keys(imported).length });
     } catch {
-      setRatingMessage("导入失败：请选择有效的评分 JSON 文件");
+      setActiveRatingNotice({ kind: "invalid" });
       setRatingSyncStatus("error");
     }
   }, []);
@@ -493,7 +527,7 @@ export default function CardBrowser() {
       if (selectedRatings.size && !selectedRatings.has(rating)) return false;
       if (
         normalizedQuery &&
-        !`${Object.values(card.titles).join(" ")} ${card.filename} ${character.name} ${character.romanized} ${group.name}`
+        !`${Object.values(card.titles).join(" ")} ${card.filename} ${LANGUAGES.map(({ id }) => characterName(character, id)).join(" ")} ${LANGUAGES.map(({ id }) => groupName(group, id)).join(" ")}`
           .toLocaleLowerCase()
           .includes(normalizedQuery)
       ) return false;
@@ -556,25 +590,25 @@ export default function CardBrowser() {
           <span className="brand-orbit"><i /><i /><i /></span>
           <div>
             <strong>SEKAI ARCHIVE</strong>
-            <small>PJSK CARD VIEWER</small>
+            <small>{copy.cardViewer}</small>
           </div>
         </div>
         <div className="header-status">
-          <span><b>{cards.length}</b> 张卡面</span>
-          <span><b>{ratedValues.length}</b> 已评分</span>
+          <span><b>{cards.length}</b> {copy.cardsShort}</span>
+          <span><b>{ratedValues.length}</b> {copy.ratedShort}</span>
         </div>
       </header>
 
       <section className="hero-section">
         <div className="hero-copy">
-          <span className="hero-kicker">YOUR SEKAI, YOUR PICKS</span>
-          <h1>PJSK<br /><em>卡面档案室</em></h1>
-          <p>收藏每一个闪耀瞬间。浏览 26 名角色的完整卡面，为心动之作留下你的星级。</p>
+          <span className="hero-kicker">{copy.heroKicker}</span>
+          <h1>PJSK<br /><em>{copy.heroTitle}</em></h1>
+          <p>{copy.heroDescription}</p>
         </div>
-        <div className="hero-stats" aria-label="收藏统计">
-          <div><span>完整收藏</span><strong>{cards.length}</strong><small>CARDS</small></div>
-          <div><span>我的评分</span><strong>{ratedValues.length}</strong><small>RATED</small></div>
-          <div><span>平均星级</span><strong>{averageRating}</strong><small>AVERAGE</small></div>
+        <div className="hero-stats" aria-label={copy.collectionStats}>
+          <div><span>{copy.completeCollection}</span><strong>{cards.length}</strong><small>{copy.cardsShort}</small></div>
+          <div><span>{copy.myRating}</span><strong>{ratedValues.length}</strong><small>{copy.ratedShort}</small></div>
+          <div><span>{copy.averageRating}</span><strong>{averageRating}</strong><small>{copy.averageShort}</small></div>
         </div>
         <div className="hero-decoration" aria-hidden="true"><span>25</span><i>♪</i></div>
       </section>
@@ -595,7 +629,8 @@ export default function CardBrowser() {
             resultCount={filteredCards.length}
             ratingsCount={ratedValues.length}
             ratingSyncStatus={ratingSyncStatus}
-            ratingMessage={ratingMessage}
+            ratingNotice={activeRatingNotice}
+            language={language}
             exportRatings={exportRatings}
             importRatings={importRatings}
             clearFilters={clearFilters}
@@ -609,15 +644,15 @@ export default function CardBrowser() {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索卡名或角色…"
-                aria-label="搜索卡名或角色"
+                placeholder={copy.searchPlaceholder}
+                aria-label={copy.searchCards}
               />
-              {query ? <button type="button" onClick={() => setQuery("")} aria-label="清空搜索">×</button> : null}
+              {query ? <button type="button" onClick={() => setQuery("")} aria-label={copy.clearSearch}>×</button> : null}
             </div>
             <button type="button" className="mobile-filter-button" onClick={() => setFiltersOpen(true)}>
-              筛选 {activeFilterCount ? <b>{activeFilterCount}</b> : null}
+              {copy.filters} {activeFilterCount ? <b>{activeFilterCount}</b> : null}
             </button>
-            <div className="language-switch" aria-label="卡面标题语言">
+            <div className="language-switch" aria-label={copy.interfaceLanguage}>
               {LANGUAGES.map((option) => (
                 <button
                   key={option.id}
@@ -631,18 +666,18 @@ export default function CardBrowser() {
               ))}
             </div>
             <label className="sort-select">
-              <span>排序</span>
+              <span>{copy.sort}</span>
               <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
-                <option value="catalog">目录顺序</option>
-                <option value="rating">我的评分最高</option>
-                <option value="title">卡名 A–Z</option>
+                <option value="catalog">{copy.catalogOrder}</option>
+                <option value="rating">{copy.ratingOrder}</option>
+                <option value="title">{copy.titleOrder}</option>
               </select>
             </label>
           </div>
 
           <div className="result-summary">
-            <div><strong>{filteredCards.length}</strong><span>张符合条件的卡面</span></div>
-            {activeFilterCount || query ? <button type="button" onClick={clearFilters}>清除筛选</button> : <span>点击卡面查看原图</span>}
+            <div><strong>{filteredCards.length}</strong><span>{copy.matchingLabel}</span></div>
+            {activeFilterCount || query ? <button type="button" onClick={clearFilters}>{copy.clearFilters}</button> : <span>{copy.clickOriginal}</span>}
           </div>
 
           {filteredCards.length ? (
@@ -653,6 +688,7 @@ export default function CardBrowser() {
                   const group = GROUP_BY_CHARACTER[card.character];
                   const rating = ratings[card.id] ?? 0;
                   const displayTitle = cardTitle(card, language);
+                  const displayCharacterName = characterName(character, language);
                   return (
                     <article
                       className="card-tile"
@@ -668,7 +704,7 @@ export default function CardBrowser() {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={assetUrl(card, true)}
-                          alt={`${character.name}「${displayTitle}」卡面`}
+                          alt={`${displayCharacterName} — ${displayTitle}`}
                           loading="lazy"
                           onError={(event) => {
                             const fallback = assetUrl(card);
@@ -676,18 +712,22 @@ export default function CardBrowser() {
                           }}
                         />
                         <span className="card-wiki-badges">
-                          <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={card.attribute} />
-                          <WikiIcon src={CARD_RARITIES.find((item) => item.id === card.rarity)!.icon} alt={card.rarity} />
+                          <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={attributeName(card.attribute, language)} />
+                          <WikiIcon
+                            src={CARD_RARITIES.find((item) => item.id === card.rarity)!.icon}
+                            alt={rarityName(card.rarity, language)}
+                            className={`card-rarity-icon ${card.rarity.endsWith("-trained") ? "is-trained" : ""}`}
+                          />
                         </span>
-                        <span className="card-open-hint">查看原图 ↗</span>
+                        <span className="card-open-hint">{copy.openOriginal}</span>
                       </div>
                       <div className="card-meta">
                         <div className="card-character-row">
                           <CharacterAvatar character={character} className="mini-character-mark" />
-                          <span><strong>{character.name}</strong><small style={{ color: group.color }}>{group.shortName}</small></span>
+                          <span><strong>{displayCharacterName}</strong><small style={{ color: group.color }}>{groupName(group, language)}</small></span>
                         </div>
                         <h3 title={displayTitle}>{displayTitle}</h3>
-                        <StarRating compact value={rating} onChange={(next) => setRating(card.id, next)} />
+                        <StarRating compact language={language} value={rating} onChange={(next) => setRating(card.id, next)} />
                       </div>
                     </article>
                   );
@@ -696,16 +736,16 @@ export default function CardBrowser() {
               {visibleCount < filteredCards.length ? (
                 <div className="load-more-wrap">
                   <button type="button" className="button button-primary" onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}>
-                    加载更多 <span>{Math.min(PAGE_SIZE, filteredCards.length - visibleCount)}</span>
+                    {copy.loadMore} <span>{Math.min(PAGE_SIZE, filteredCards.length - visibleCount)}</span>
                   </button>
-                  <small>已显示 {Math.min(visibleCount, filteredCards.length)} / {filteredCards.length}</small>
+                  <small>{displayedCount(language, Math.min(visibleCount, filteredCards.length), filteredCards.length)}</small>
                 </div>
               ) : null}
             </>
           ) : (
             <div className="empty-state">
-              <span>☆</span><h2>没有找到卡面</h2><p>试试减少筛选条件，或换一个搜索词。</p>
-              <button type="button" className="button button-primary" onClick={clearFilters}>重置筛选</button>
+              <span>☆</span><h2>{copy.noCards}</h2><p>{copy.noCardsDescription}</p>
+              <button type="button" className="button button-primary" onClick={clearFilters}>{copy.resetFilters}</button>
             </div>
           )}
         </div>
@@ -713,7 +753,7 @@ export default function CardBrowser() {
 
       <footer>
         <span>SEKAI ARCHIVE</span>
-        <p>角色头像参考萌娘百科；卡面花色、稀有度与团体 Logo 参考 Project SEKAI Wiki；评分同步至 data/ratings.json。</p>
+        <p>{copy.footer}</p>
       </footer>
 
       {filtersOpen ? (
@@ -733,7 +773,8 @@ export default function CardBrowser() {
               resultCount={filteredCards.length}
               ratingsCount={ratedValues.length}
               ratingSyncStatus={ratingSyncStatus}
-              ratingMessage={ratingMessage}
+              ratingNotice={activeRatingNotice}
+              language={language}
               exportRatings={exportRatings}
               importRatings={importRatings}
               clearFilters={clearFilters}
@@ -744,31 +785,31 @@ export default function CardBrowser() {
       ) : null}
 
       {selectedCard ? (
-        <div className="image-modal" role="dialog" aria-modal="true" aria-label={`${selectedCardTitle} 原图`}>
-          <button type="button" className="modal-close" onClick={() => setSelectedCardId(null)} aria-label="关闭原图">×</button>
-          <button type="button" className="modal-nav modal-prev" onClick={() => moveSelected(-1)} aria-label="上一张">‹</button>
+        <div className="image-modal" role="dialog" aria-modal="true" aria-label={`${selectedCardTitle} — ${copy.openOriginal}`}>
+          <button type="button" className="modal-close" onClick={() => setSelectedCardId(null)} aria-label={copy.closeOriginal}>×</button>
+          <button type="button" className="modal-nav modal-prev" onClick={() => moveSelected(-1)} aria-label={copy.previousCard}>‹</button>
           <div className="modal-image-stage" onClick={() => setSelectedCardId(null)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={assetUrl(selectedCard)}
-              alt={`${CHARACTER_BY_ID[selectedCard.character].name}「${selectedCardTitle}」原图`}
+              alt={`${characterName(CHARACTER_BY_ID[selectedCard.character], language)} — ${selectedCardTitle}`}
               onClick={(event) => event.stopPropagation()}
             />
           </div>
-          <button type="button" className="modal-nav modal-next" onClick={() => moveSelected(1)} aria-label="下一张">›</button>
+          <button type="button" className="modal-nav modal-next" onClick={() => moveSelected(1)} aria-label={copy.nextCard}>›</button>
           <div className="modal-info">
             <div className="modal-title-block">
-              <span style={{ color: GROUP_BY_CHARACTER[selectedCard.character].color }}>{GROUP_BY_CHARACTER[selectedCard.character].name}</span>
+              <span style={{ color: GROUP_BY_CHARACTER[selectedCard.character].color }}>{groupName(GROUP_BY_CHARACTER[selectedCard.character], language)}</span>
               <h2>{selectedCardTitle}</h2>
               <p>
-                {CHARACTER_BY_ID[selectedCard.character].name} · {ATTRIBUTES.find((item) => item.id === selectedCard.attribute)!.name} · {CARD_RARITIES.find((item) => item.id === selectedCard.rarity)!.name} · {selectedIndex + 1} / {filteredCards.length}
+                {characterName(CHARACTER_BY_ID[selectedCard.character], language)} · {attributeName(selectedCard.attribute, language)} · {rarityName(selectedCard.rarity, language)} · {selectedIndex + 1} / {filteredCards.length}
               </p>
             </div>
             <div className="modal-rating-block">
-              <small>MY RATING</small>
-              <StarRating dark value={ratings[selectedCard.id] ?? 0} onChange={(next) => setRating(selectedCard.id, next)} />
+              <small>{copy.myRating}</small>
+              <StarRating dark language={language} value={ratings[selectedCard.id] ?? 0} onChange={(next) => setRating(selectedCard.id, next)} />
             </div>
-            <a href={assetUrl(selectedCard)} target="_blank" rel="noreferrer" className="original-link">新窗口打开原图 ↗</a>
+            <a href={assetUrl(selectedCard)} target="_blank" rel="noreferrer" className="original-link">{copy.openNewWindow}</a>
           </div>
         </div>
       ) : null}
