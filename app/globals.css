@@ -596,6 +596,28 @@ button {
   object-fit: contain;
 }
 
+.rarity-icon-strip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.card-rarity-filter-grid button .rarity-icon-strip {
+  width: 48px;
+  height: 40px;
+}
+
+.card-rarity-filter-grid button .rarity-icon-strip img {
+  width: 11px;
+  height: 11px;
+}
+
+.card-rarity-filter-grid button .rarity-icon-strip.is-3-stars img {
+  width: 13px;
+  height: 13px;
+}
+
 .card-rarity-filter-grid button.is-trained-rarity img {
   transform: rotate(-90deg);
 }
@@ -972,6 +994,18 @@ button {
 
 .card-wiki-badges .card-rarity-icon.is-trained {
   transform: rotate(-90deg);
+}
+
+.card-wiki-badges .rarity-icon-strip {
+  width: 23px;
+  height: 23px;
+  gap: 0;
+}
+
+.card-wiki-badges .rarity-icon-strip img,
+.card-wiki-badges .rarity-icon-strip.is-3-stars img {
+  width: 6px;
+  height: 6px;
 }
 
 .card-open-hint {

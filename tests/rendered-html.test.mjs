@@ -42,12 +42,14 @@ test("server-renders the finished PJSK card gallery", async () => {
 });
 
 test("ships multilingual card data, a fully localized interface, local Wiki icons, and portable ratings", async () => {
-  const [cardsSource, browserSource, i18nSource, cssSource, pluginSource, ratingsSource, metadataSource, titlesSource, iconFiles, filterIconFiles] = await Promise.all([
+  const [cardsSource, browserSource, appDataSource, i18nSource, cssSource, pluginSource, fandomSource, ratingsSource, metadataSource, titlesSource, iconFiles, filterIconFiles] = await Promise.all([
     readFile(new URL("../app/cards.json", import.meta.url), "utf8"),
     readFile(new URL("../app/CardBrowser.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/i18n.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../build/local-card-assets-vite-plugin.ts", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/fetch_fandom_metadata.py", import.meta.url), "utf8"),
     readFile(new URL("../data/ratings.json", import.meta.url), "utf8"),
     readFile(new URL("../data/card-metadata.json", import.meta.url), "utf8"),
     readFile(new URL("../data/card-titles.json", import.meta.url), "utf8"),
@@ -83,8 +85,13 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(browserSource, /cardTitle\(card, language\)/);
   assert.match(browserSource, /document\.documentElement\.lang = LANGUAGE_TAGS\[language\]/);
   assert.match(browserSource, /card-rarity-icon/);
+  assert.match(browserSource, /Array\.from\(\{ length: untrainedStarCount \}/);
   assert.match(browserSource, /aria-pressed=/);
   assert.doesNotMatch(browserSource, /view-mode-switch|card-type-badge|setViewMode/);
+  assert.match(appDataSource, /id: "3"[^\n]+icon: "\/filter-icons\/rarities\/1-star\.png"/);
+  assert.match(appDataSource, /id: "4"[^\n]+icon: "\/filter-icons\/rarities\/1-star\.png"/);
+  assert.doesNotMatch(appDataSource, /id: "[34]"[^\n]+icon: "\/filter-icons\/rarities\/[34]-star\.png"/);
+  assert.doesNotMatch(fandomSource, /"Rarity[34]\.png"/);
   assert.match(i18nSource, /カードを絞り込む/);
   assert.match(i18nSource, /Filter Cards/);
   assert.match(i18nSource, /すべてリセット/);

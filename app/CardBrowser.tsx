@@ -10,6 +10,7 @@ import {
   GROUP_BY_CHARACTER,
   GROUPS,
   type CardLanguage,
+  type CardRarityId,
   type CardRecord,
 } from "./data";
 import {
@@ -99,6 +100,33 @@ function WikiIcon({ src, alt, className }: { src: string; alt: string; className
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={alt} className={className} loading="lazy" />
+  );
+}
+
+function RarityIcon({ rarityId, alt, className }: { rarityId: CardRarityId; alt: string; className?: string }) {
+  const rarity = CARD_RARITIES.find((item) => item.id === rarityId)!;
+  const untrainedStarCount = rarityId === "3" || rarityId === "4" ? Number(rarityId) : 0;
+
+  if (untrainedStarCount) {
+    return (
+      <span
+        className={`rarity-icon-strip is-${untrainedStarCount}-stars ${className ?? ""}`}
+        role={alt ? "img" : undefined}
+        aria-label={alt || undefined}
+      >
+        {Array.from({ length: untrainedStarCount }, (_, index) => (
+          <WikiIcon key={index} src={rarity.icon} alt="" />
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <WikiIcon
+      src={rarity.icon}
+      alt={alt}
+      className={`${className ?? ""} ${rarityId.endsWith("-trained") ? "is-trained" : ""}`.trim()}
+    />
   );
 }
 
@@ -302,7 +330,7 @@ function FilterPanel({
                 aria-label={rarityName(rarity.id, language)}
                 onClick={() => setSelectedCardRarities(toggleInSet(selectedCardRarities, rarity.id))}
               >
-                <WikiIcon src={rarity.icon} alt="" />
+                <RarityIcon rarityId={rarity.id} alt="" />
               </button>
             );
           })}
@@ -713,10 +741,10 @@ export default function CardBrowser() {
                         />
                         <span className="card-wiki-badges">
                           <WikiIcon src={ATTRIBUTES.find((item) => item.id === card.attribute)!.icon} alt={attributeName(card.attribute, language)} />
-                          <WikiIcon
-                            src={CARD_RARITIES.find((item) => item.id === card.rarity)!.icon}
+                          <RarityIcon
+                            rarityId={card.rarity}
                             alt={rarityName(card.rarity, language)}
-                            className={`card-rarity-icon ${card.rarity.endsWith("-trained") ? "is-trained" : ""}`}
+                            className="card-rarity-icon"
                           />
                         </span>
                         <span className="card-open-hint">{copy.openOriginal}</span>

@@ -56,8 +56,9 @@ ICONS = {
     "attributes/pure.svg": "Pure.svg",
     "rarities/1-star.png": "Star untrained.png",
     "rarities/2-star.png": "Rarity2.png",
-    "rarities/3-star.png": "Rarity3.png",
-    "rarities/4-star.png": "Rarity4.png",
+    # Untrained 3★/4★ use repeated copies of the same gold star in the UI.
+    "rarities/3-star.png": "Star untrained.png",
+    "rarities/4-star.png": "Star untrained.png",
     "rarities/3-star-trained.png": "Star 3 trained.png",
     "rarities/4-star-trained.png": "Star 4 trained.png",
     "rarities/birthday.png": "Ribbon.png",
