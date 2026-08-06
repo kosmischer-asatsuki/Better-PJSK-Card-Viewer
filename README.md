@@ -101,7 +101,7 @@ data/ratings.json
 
 双击 `refresh-card-data.cmd` 可从 [Project SEKAI Wiki Card List](https://projectsekai.fandom.com/wiki/Card_List) 更新：
 
-- 2354 张本地卡面的五种 Attributes。
+- 2364 张本地卡面的五种 Attributes。
 - 1 星、2 星、3 星、4 星、3 星彩（特训后）、4 星彩（特训后）和生日卡分类。
 - 五种花色图标、七种稀有度图标和六个团体 Logo。
 - 从 [Sekai Viewer](https://sekai.best/card) 使用的简中、日文和英文主数据更新三语卡面标题。

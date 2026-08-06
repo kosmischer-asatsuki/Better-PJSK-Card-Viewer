@@ -24,7 +24,7 @@ test("server-renders the finished PJSK card gallery", async () => {
   const html = await response.text();
   assert.match(html, /<title>PJSK 卡面档案室｜SEKAI ARCHIVE<\/title>/i);
   assert.match(html, /PJSK 卡面预览器/);
-  assert.match(html, /2354/);
+  assert.match(html, /2364/);
   assert.match(html, /筛选卡面/);
   assert.match(html, /卡面花色/);
   assert.match(html, /游戏内星级/);
@@ -62,7 +62,7 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   const titles = JSON.parse(titlesSource);
   const attributes = new Set(["cool", "cute", "happy", "mysterious", "pure"]);
   const rarities = new Set(["1", "2", "3", "4", "3-trained", "4-trained", "birthday"]);
-  assert.equal(cards.length, 2354);
+  assert.equal(cards.length, 2364);
   assert.equal(new Set(cards.map((card) => card.character)).size, 26);
   assert.ok(cards.every((card) => !("imageUrl" in card)));
   assert.ok(cards.some((card) => card.trained));
@@ -75,6 +75,23 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
     ja: "夜明け前の語らい",
     en: "Words Before Dawn",
   });
+  const addedCardIds = [
+    "HanasatoMinori/A_Dream_Lost_In_The_Crowd_T.png",
+    "HinomoriShiho/Something_Lurking_Deep_Within_My_Heart.png",
+    "HinomoriShiho/Something_Lurking_Deep_Within_My_Heart_T.png",
+    "HoshinoIchika/A_Choice_Made_Without_Regret.png",
+    "HoshinoIchika/A_Choice_Made_Without_Regret_T.png",
+    "KagamineLen/Watching_Over_That_Choice.png",
+    "KagamineLen/Watching_Over_That_Choice_T.png",
+    "KagamineRin/Too_Much_To_Do!_.png",
+    "KagamineRin/Too_Much_To_Do!__T.png",
+    "MochizukiHonami/A_Delicious_Cheer.png",
+  ];
+  const addedCards = cards.filter((card) => addedCardIds.includes(card.id));
+  assert.equal(addedCards.length, addedCardIds.length);
+  assert.ok(addedCards.every((card) => Number.isInteger(card.wikiNumber) && Number.isInteger(card.sekaiId)));
+  assert.ok(addedCards.every((card) => attributes.has(card.attribute) && rarities.has(card.rarity)));
+  assert.ok(addedCards.every((card) => new Set(Object.keys(card.titles)).size === 3));
   assert.equal(new Set(cards.map((card) => card.attribute)).size, 5);
   assert.equal(new Set(cards.map((card) => card.rarity)).size, 7);
   assert.match(browserSource, /pjsk-card-ratings-v1/);
