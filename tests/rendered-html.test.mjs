@@ -105,6 +105,13 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(browserSource, /event\.key === "Enter" \|\| event\.key === "ArrowRight"/);
   assert.match(browserSource, /event\.key === "Backspace" \|\| event\.key === "ArrowLeft"/);
   assert.match(browserSource, /setRating\(selectedCard\.id, Number\(event\.key\)\)/);
+  assert.match(browserSource, /setSelectedCardId\(\(currentCardId\) =>/);
+  assert.match(browserSource, /tabIndex=\{-1\}/);
+  assert.match(browserSource, /<main onKeyDown=\{handleViewerKeyDown\}>/);
+  assert.match(browserSource, /viewerRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(browserSource, /if \(selectedCardId\) return;/);
+  assert.doesNotMatch(browserSource, /autoFocus/);
+  assert.doesNotMatch(browserSource, /window\.addEventListener\("keydown"/);
   assert.match(browserSource, /modal-keyboard-hint/);
   assert.match(browserSource, /card-meta-badges/);
   assert.doesNotMatch(browserSource, /card-wiki-badges/);
@@ -128,6 +135,9 @@ test("ships multilingual card data, a fully localized interface, local Wiki icon
   assert.match(cssSource, /\.card-rarity-filter-grid button \.rarity-icon-strip \{[\s\S]*?width: 100%[\s\S]*?justify-content: center/);
   assert.match(cssSource, /\.card-rarity-filter-grid button > \.rarity-birthday-icon \{[\s\S]*?width: 20px[\s\S]*?height: 20px/);
   assert.match(cssSource, /\.card-meta-badges \.rarity-icon-strip \{[\s\S]*?--rarity-star-size: 8px/);
+  assert.match(cssSource, /\.modal-nav::before \{[\s\S]*?border-width: 3px 3px 0 0/);
+  assert.match(cssSource, /\.modal-prev::before \{ transform: rotate\(-135deg\); \}/);
+  assert.match(cssSource, /\.modal-next::before \{ transform: rotate\(45deg\); \}/);
   assert.doesNotMatch(cssSource, /\.card-wiki-badges|is-trained-rarity/);
   assert.match(pluginSource, /pathname === "\/api\/local-ratings"/);
   assert.equal(ratings.version, 1);

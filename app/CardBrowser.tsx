@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import cardsData from "./cards.json";
 import {
   ATTRIBUTES,
@@ -432,6 +432,7 @@ export default function CardBrowser() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const copy = UI_COPY[language];
 
   useEffect(() => {
@@ -581,41 +582,49 @@ export default function CardBrowser() {
   const selectedCardTitle = selectedCard ? cardTitle(selectedCard, language) : "";
 
   const moveSelected = useCallback((direction: number) => {
-    if (!filteredCards.length || selectedIndex < 0) return;
-    const nextIndex = (selectedIndex + direction + filteredCards.length) % filteredCards.length;
-    setSelectedCardId(filteredCards[nextIndex].id);
-  }, [filteredCards, selectedIndex]);
+    setSelectedCardId((currentCardId) => {
+      if (!currentCardId || !filteredCards.length) return currentCardId;
+      const currentIndex = filteredCards.findIndex((card) => card.id === currentCardId);
+      if (currentIndex < 0) return currentCardId;
+      const nextIndex = (currentIndex + direction + filteredCards.length) % filteredCards.length;
+      return filteredCards[nextIndex].id;
+    });
+  }, [filteredCards]);
+
+  const handleViewerKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.repeat || !selectedCard) return;
+
+    if (/^[1-5]$/.test(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+      setRating(selectedCard.id, Number(event.key));
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedCardId(null);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveSelected(1);
+      return;
+    }
+
+    if (event.key === "Backspace" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveSelected(-1);
+    }
+  };
 
   useEffect(() => {
-    if (!selectedCard) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) return;
-
-      if (/^[1-5]$/.test(event.key)) {
-        event.preventDefault();
-        setRating(selectedCard.id, Number(event.key));
-        return;
-      }
-
-      if (event.key === "Escape") {
-        setSelectedCardId(null);
-        return;
-      }
-
-      if (event.key === "Enter" || event.key === "ArrowRight") {
-        event.preventDefault();
-        moveSelected(1);
-        return;
-      }
-
-      if (event.key === "Backspace" || event.key === "ArrowLeft") {
-        event.preventDefault();
-        moveSelected(-1);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [moveSelected, selectedCard, setRating]);
+    if (selectedCardId) viewerRef.current?.focus({ preventScroll: true });
+  }, [selectedCardId]);
 
   const clearFilters = () => {
     setSelectedGroups(new Set());
@@ -633,7 +642,7 @@ export default function CardBrowser() {
     : "—";
 
   return (
-    <main>
+    <main onKeyDown={handleViewerKeyDown}>
       <header className="site-header">
         <div className="brand-block">
           <span className="brand-orbit"><i /><i /><i /></span>
@@ -746,6 +755,7 @@ export default function CardBrowser() {
                       role="button"
                       onClick={() => setSelectedCardId(card.id)}
                       onKeyDown={(event) => {
+                        if (selectedCardId) return;
                         if (event.key === "Enter" || event.key === " ") setSelectedCardId(card.id);
                       }}
                     >
@@ -832,9 +842,16 @@ export default function CardBrowser() {
       ) : null}
 
       {selectedCard ? (
-        <div className="image-modal" role="dialog" aria-modal="true" aria-label={`${selectedCardTitle} — ${copy.openOriginal}`}>
+        <div
+          className="image-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${selectedCardTitle} — ${copy.openOriginal}`}
+          ref={viewerRef}
+          tabIndex={-1}
+        >
           <button type="button" className="modal-close" onClick={() => setSelectedCardId(null)} aria-label={copy.closeOriginal}>×</button>
-          <button type="button" className="modal-nav modal-prev" onClick={() => moveSelected(-1)} aria-label={copy.previousCard}>‹</button>
+          <button type="button" className="modal-nav modal-prev" onClick={() => moveSelected(-1)} aria-label={copy.previousCard} />
           <div className="modal-image-stage" onClick={() => setSelectedCardId(null)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -843,7 +860,7 @@ export default function CardBrowser() {
               onClick={(event) => event.stopPropagation()}
             />
           </div>
-          <button type="button" className="modal-nav modal-next" onClick={() => moveSelected(1)} aria-label={copy.nextCard}>›</button>
+          <button type="button" className="modal-nav modal-next" onClick={() => moveSelected(1)} aria-label={copy.nextCard} />
           <div className="modal-info">
             <div className="modal-title-block">
               <span style={{ color: GROUP_BY_CHARACTER[selectedCard.character].color }}>{groupName(GROUP_BY_CHARACTER[selectedCard.character], language)}</span>

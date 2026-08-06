@@ -1268,12 +1268,20 @@ footer p {
   width: 51px;
   height: 51px;
   top: 43%;
-  font-size: 40px;
-  line-height: 1;
+}
+
+.modal-nav::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border: solid currentColor;
+  border-width: 3px 3px 0 0;
 }
 
 .modal-prev { left: 21px; }
 .modal-next { right: 21px; }
+.modal-prev::before { transform: rotate(-135deg); }
+.modal-next::before { transform: rotate(45deg); }
 
 .modal-close:hover,
 .modal-nav:hover {
